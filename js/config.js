@@ -9,9 +9,9 @@ window.CONFIG = {
 
   // ⚠️ DATOS DE EJEMPLO: reemplázalos por los reales
   banco: {
-    nombre: "BBVA México (ejemplo)",
-    clabe: "012180001234567890",   // 18 dígitos
-    titular: "Nombre del Titular"
+    nombre: "NuBank",
+    clabe: "638180000193558418",   // 18 dígitos
+    titular: "Jose Carlos Granados Abraham"
   },
 
   // Pestañas del catálogo (el orden importa). "Todos" siempre va primero.
