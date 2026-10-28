@@ -23,4 +23,13 @@
   App.drawer.init();
   App.productModal.init();
   App.catalog.init();
+
+  // Enlace directo: index.html#p=3DC-0123 abre la ficha de ese producto
+  const openFromHash = () => {
+    const m = location.hash.match(/^#p=([\w-]+)/i);
+    const p = m && App.bySku(decodeURIComponent(m[1]));
+    if (p && App.topLayer() !== App.$("#productModal")) App.productModal.open(p.id);
+  };
+  openFromHash();
+  window.addEventListener("hashchange", openFromHash);
 })();

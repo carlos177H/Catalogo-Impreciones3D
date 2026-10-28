@@ -30,6 +30,7 @@ App.drawer = (() => {
         <img src="${App.img(l.p.imagenes[0], 160)}" alt="${esc(l.p.nombre)}" ${App.IMG_ATTR}>
         <div>
           <div class="ci-name">${esc(l.p.nombre)}</div>
+          <div class="ci-sku">${esc(App.skuOf(l.p))}</div>
           <div class="ci-meta">${fmt(l.unit)} c/u${l.tier.descuento ? `<span class="tag">−${pct(l.tier.descuento)}%</span>` : ""}</div>
           <div class="stepper sm">
             <button data-act="dec" aria-label="Menos">−</button>
@@ -47,7 +48,8 @@ App.drawer = (() => {
     $("#cartTotals").innerHTML = `
       <div><span>Piezas</span><span>${t.pcs}</span></div>
       ${t.ahorro > 0 ? `<div><span>Subtotal sin descuento</span><span>${fmt(t.base)}</span></div><div class="save"><span>Descuento por mayoreo</span><span>−${fmt(t.ahorro)}</span></div>` : ""}
-      <div class="grand"><span>Total</span><span>${fmt(t.total)}</span></div>`;
+      <div class="grand"><span>Total estimado</span><span>${fmt(t.total)}</span></div>
+      <p class="ref-note">Precios de referencia: te confirmamos el total por WhatsApp.</p>`;
   }
 
   /* ---------- Datos del cliente ---------- */

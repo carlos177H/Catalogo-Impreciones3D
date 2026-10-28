@@ -20,8 +20,9 @@ App.checkout = (() => {
       <div class="summary">
         ${App.cart.lines().map(l => `<div class="row"><span>${l.qty} × ${esc(l.p.nombre)}</span><span>${fmt(l.subtotal)}</span></div>`).join("")}
         ${t.ahorro > 0 ? `<div class="row" style="color:var(--accent-ink);font-weight:700"><span>Descuento por mayoreo</span><span>−${fmt(t.ahorro)}</span></div>` : ""}
-        <div class="row total"><span>Total a pagar</span><span>${fmt(t.total)}</span></div>
+        <div class="row total"><span>Total estimado</span><span>${fmt(t.total)}</span></div>
       </div>
+      <p class="ref-note" style="margin:-8px 0 16px">Son precios de referencia: te confirmamos el total final por WhatsApp antes de pagar.</p>
 
       <div class="section-t" style="margin-top:0">Método de pago</div>
       <div class="pay-opts" role="radiogroup">
@@ -37,9 +38,9 @@ App.checkout = (() => {
           <div class="clabe-wrap"><b class="clabe">${clabeFmt}</b>
           <button class="copy-btn" id="copyClabe" type="button">${ICON_COPY}<span>Copiar</span></button></div></div>
         <div class="bank-row"><span>Titular</span><b>${esc(b.titular)}</b></div>
-        <div class="bank-row"><span>Monto</span><b>${fmt(t.total)}</b></div>
+        <div class="bank-row"><span>Monto estimado</span><b>${fmt(t.total)}</b></div>
         <div class="receipt-tip"><span class="i">📸</span>
-          <span>Haz tu transferencia y, cuando se abra WhatsApp, <b>envía la captura del comprobante en el mismo chat</b> junto con tu pedido. Así confirmamos tu pago.</span>
+          <span>Cuando te confirmemos el total por WhatsApp, haz tu transferencia y <b>envía la captura del comprobante en el mismo chat</b>. Así confirmamos tu pago.</span>
         </div>
       </div>
 
@@ -87,14 +88,17 @@ App.checkout = (() => {
     L.push("", "🛒 *Pedido:*");
     App.cart.lines().forEach((l, k) => {
       L.push(`${k + 1}. ${l.p.nombre}`);
+      L.push(`    🆔 ${App.skuOf(l.p)}`);
       L.push(`    ${l.qty} pz × ${fmt(l.unit)}${l.tier.descuento ? ` (−${pct(l.tier.descuento)}%)` : ""} = *${fmt(l.subtotal)}*`);
+      const link = App.productUrl(l.p);
+      if (link) L.push(`    🔗 ${link}`);
     });
     L.push("");
     if (t.ahorro > 0) L.push(`🏷️ Descuento por mayoreo: −${fmt(t.ahorro)}`);
-    L.push(`💰 *Total a pagar: ${fmt(t.total)} MXN*`, "");
+    L.push(`💰 *Total estimado: ${fmt(t.total)} MXN* (precios de referencia; quedo atento a la confirmación)`, "");
     if (state.payment === "transferencia") {
       L.push("💳 *Método de pago:* Transferencia bancaria");
-      L.push("📸 Te envío la captura del comprobante en este chat.");
+      L.push("📸 Al confirmar el total, te envío la captura del comprobante en este chat.");
     } else {
       L.push("💵 *Método de pago:* Efectivo contra entrega");
     }

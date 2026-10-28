@@ -15,10 +15,11 @@ catalogo/
 │   │   └── productos.js    ← "base de datos" de productos
 │   ├── utils.js            ← funciones comunes (precios, formato, imágenes, modales)
 │   ├── cart.js             ← estado del carrito y totales
-│   ├── catalog.js          ← pestañas, buscador y grid
+│   ├── catalog.js          ← inicio (tendencias + filas por categoría), pestañas, buscador y grid
 │   ├── product-modal.js    ← galería, ficha técnica y calculadora
 │   ├── cart-drawer.js      ← carrito lateral y datos del cliente
 │   ├── checkout.js         ← método de pago y mensaje de WhatsApp
+│   ├── quote.js            ← «Cotiza tu diseño» (pedido personalizado por WhatsApp)
 │   └── main.js             ← arranque
 └── tools/
     └── extraer-makerworld.js  ← genera registros desde MakerWorld
@@ -33,13 +34,31 @@ que abriendo `index.html` con doble clic.
 |--------------------------------------|------------------------------|
 | Agregar / quitar / cambiar productos | `js/data/productos.js`       |
 | Ocultar un producto sin borrarlo     | `activo: false` en su registro |
+| Poner la dirección pública del sitio | `urlSitio` en `js/config.js` (para los enlaces del pedido) |
 | Cambiar número de WhatsApp o CLABE   | `js/config.js`               |
 | Activar descuentos por mayoreo       | `descuentosActivos: true` en `js/config.js` |
 | Cambiar la escala de descuentos      | `CONFIG.escalaDescuento`     |
 | Agregar una pestaña                  | `CONFIG.categorias`          |
+| Cambiar «Lo que está de moda»        | `CONFIG.tendencias` (`manual` = SKUs fijos, `temporada` = palabras por mes) |
 | Cambiar colores                      | `:root` en `css/styles.css`  |
 
 Las pestañas sin productos se ocultan solas.
+
+Al cambiar archivos, sube el número `?v=` de `index.html` para que los navegadores no muestren la versión anterior.
+
+## Inicio y cotizaciones
+
+- **Inicio**: primero «Lo que está de moda» (productos de temporada según el mes + los SKUs de `CONFIG.tendencias.manual`), luego una fila por categoría con «Ver todo».
+- **¿No encuentras lo que quieres?**: aparece en el inicio, dentro de los resultados, al final de cada lista y en cada búsqueda. Abre un formulario que manda la solicitud por WhatsApp; las fotos o archivos el cliente los adjunta en ese mismo chat.
+- Los precios se muestran como **precios de referencia**; el total final se confirma por WhatsApp antes del pago.
+
+## Identificadores y enlaces
+
+Cada producto tiene `sku` (por ejemplo `3DC-0123`), que se muestra discreto en la ficha y en el carrito,
+y `fechaRegistro` (AAAA-MM-DD), que no ve el cliente. El buscador también encuentra productos por su `sku`.
+
+`index.html#p=3DC-0123` abre directamente la ficha de ese producto. El mensaje de WhatsApp incluye
+el `sku` y ese enlace por cada artículo, para que reconozcas rápido qué compró el cliente.
 
 ## Agregar productos desde MakerWorld
 
@@ -60,14 +79,11 @@ Revisa siempre `categoria`, `precioBase`, `descripcionCorta` y **la licencia**
 (`fuente.permiteVenta`). Con `ocultarSinLicenciaComercial: true` en `config.js`
 el catálogo oculta automáticamente los que no se pueden vender.
 
-## Precio sugerido
+## Precios
 
-```
-precio = (gramos × costo/g × [1.15 si es multicolor] + horas × costo/h) × margen
-```
-
-Valores por defecto: PLA $0.40/g, PETG $0.45/g, $8/h, margen ×2.5, mínimo $45,
-redondeado a $5. Cámbialos en `CONFIG.costos` y en la parte de arriba del extractor.
+Los precios salen de `costos_catalogo_3d.xlsx` (hoja «Parámetros»: filamento por color, luz, impresora,
+mano de obra, empaque y margen). Cambia ahí tus costos y la columna «Precio final» da el precio de cada pieza.
+El extractor usa la misma fórmula (valores en `CONFIG.costos`).
 
 ## Publicar en GitHub Pages
 

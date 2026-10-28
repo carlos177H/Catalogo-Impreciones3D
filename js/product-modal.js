@@ -13,6 +13,8 @@ App.productModal = (() => {
 
     $("#pmCat").textContent = p.categoria;
     $("#pmTitle").textContent = p.nombre;
+    $("#pmSku").textContent = "ID: " + App.skuOf(p);
+    setHash("#p=" + encodeURIComponent(App.skuOf(p)));
     $("#pmDesc").textContent = p.descripcionDetallada;
 
     const many = p.imagenes.length > 1;
@@ -31,6 +33,11 @@ App.productModal = (() => {
     updateCalc();
     App.openLayer(modal());
     $("#productModal .modal-box").scrollTop = 0;
+  }
+
+  // Mantiene en la URL el producto abierto para poder compartir el enlace
+  function setHash(h) {
+    try { history.replaceState(null, "", location.pathname + location.search + h); } catch (e) {}
   }
 
   function renderSpecs(p) {
@@ -84,6 +91,14 @@ App.productModal = (() => {
   }
 
   function init() {
+    // Al cerrar el modal, se limpia el enlace de la barra de direcciones
+    const close = App.closeLayer;
+    App.closeLayer = el => {
+      const target = el || App.topLayer();
+      close(el);
+      if (target === modal()) setHash("");
+    };
+
     $("#prevImg").addEventListener("click", () => go(state.i - 1));
     $("#nextImg").addEventListener("click", () => go(state.i + 1));
     $("#thumbs").addEventListener("click", e => { const b = e.target.closest(".thumb"); if (b) go(+b.dataset.i); });

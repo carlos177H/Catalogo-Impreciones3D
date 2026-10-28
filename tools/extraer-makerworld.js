@@ -17,8 +17,9 @@
    Revisa siempre: id, categoria, precioBase y la licencia.
    ========================================================= */
 (() => {
-  // Misma fórmula que CONFIG.costos en js/config.js
-  const COSTOS = { PLA: 0.40, PETG: 0.45, hora: 8, multicolor: 1.15, margen: 2.5, minimo: 45, redondeo: 5 };
+  // Misma fórmula que costos_catalogo_3d.xlsx y CONFIG.costos en js/config.js
+  const COSTOS = { PLA: 300, PETG: 450, merma: 0.05, multicolor: 0.15, luzHora: 0.448, desgasteHora: 3.33,
+                   manoObra: 8.33, empaque: 5, margen: 1.5, minimo: 10, redondeo: 5 };
   const LICENCIAS_VENTA_OK = ["BY", "BY-SA", "BY-ND", "CC0", "CC BY", "CC BY-SA", "CC BY-ND"];
 
   const CATEGORIA = (cats, tags) => {
@@ -26,6 +27,19 @@
     if (/pok[eé]|pikachu|eevee|charmander|gengar/.test(t)) return "Pokémon";
     if (/minecraft|creeper|enderman/.test(t)) return "Minecraft";
     if (/navidad|halloween|muertos|san valent|christmas|temporada|ofrenda/.test(t)) return "Temporada y Festividades";
+    if (/boda|wedding|bautizo|baptism|baby shower|servilletero|napkin|cake topper|centro de mesa/.test(t)) return "Recuerdos para Eventos";
+    if (/pareja|couple|aniversario|anniversary|coraz[oó]n compartido/.test(t)) return "Parejas y Amor";
+    if (/maestr|teacher|escuela|school|aula|classroom|educativ|educational/.test(t)) return "Maestros y Escuela";
+    if (/separador|bookmark|libro|\bbook|lectura|reading/.test(t)) return "Libros y Lectura";
+    if (/f[uú]tbol|soccer|football|basket|b[eé]isbol|baseball|\bgym\b|pesa|dumbbell|kettlebell|fitness|deporte|sport|tenis|golf/.test(t)) return "Deportes y Fitness";
+    if (/\bauto\b|\bcarro\b|\bcar\b|coche|jdm|truck|cami[oó]n|hot wheels/.test(t)) return "Autos";
+    if (/funko|kpop|k-pop|\bbts\b|cantante|singer|m[uú]sica|music|guitar|vinilo|vinyl/.test(t)) return "Fans: Música y Figuras";
+    if (/miniatura|miniature|dollhouse|casa de mu[ñn]ecas|diorama|1:12|1:24/.test(t)) return "Miniaturas y Dioramas";
+    if (/jap[oó]n|japan|torii|pagoda|corea|korea|eiffel|par[ií]s|london|londres|coliseo|m[eé]xico|azteca|maya|landmark/.test(t)) return "Souvenirs del Mundo";
+    if (/oficina|escritorio|desk|office|monitor|bol[ií]grafo|portal[aá]piz/.test(t)) return "Oficina y Escritorio";
+    if (/trofeo|premio|trophy|award|medalla|graduaci[oó]n/.test(t)) return "Regalos Corporativos y Premios";
+    if (/ajedrez|chess|domin[oó]|backgammon|juego de mesa|board game/.test(t)) return "Juegos de Mesa";
+    if (/escultura|sculpture|jarr[oó]n|vase|elegante|elegant|busto|estatua/.test(t)) return "Decoración Elegante";
     if (/l[aá]mpara|lamp|linterna|lantern|night light/.test(t)) return "Lámparas";
     if (/fidget|antiestr[eé]s|clicker|spinner/.test(t)) return "Antiestrés y Fidgets";
     if (/motor|pist[oó]n|turbo|buj[ií]a|placa de auto/.test(t)) return "Llaveros de Motor";
@@ -51,9 +65,10 @@
   };
 
   const precio = (g, h, colores, material) => {
-    const cg = /PETG/i.test(material) ? COSTOS.PETG : COSTOS.PLA;
-    const costo = g * cg * (colores > 1 ? COSTOS.multicolor : 1) + h * COSTOS.hora;
-    return Math.max(COSTOS.minimo, Math.ceil(costo * COSTOS.margen / COSTOS.redondeo) * COSTOS.redondeo);
+    const kg = /PETG/i.test(material) ? COSTOS.PETG : COSTOS.PLA;
+    const costo = g / 1000 * kg * (1 + COSTOS.merma) * (colores > 1 ? 1 + COSTOS.multicolor : 1)
+      + h * (COSTOS.luzHora + COSTOS.desgasteHora) + COSTOS.manoObra + COSTOS.empaque;
+    return Math.max(COSTOS.minimo, Math.ceil(costo * (1 + COSTOS.margen) / COSTOS.redondeo) * COSTOS.redondeo);
   };
 
   function aRegistro(d, profileId) {
@@ -79,6 +94,8 @@
 
     return {
       id: 0, // ← CAMBIA por un id único
+      sku: "3DC-0000", // ← usa el mismo número que el id (3DC + 4 dígitos)
+      fechaRegistro: new Date().toISOString().slice(0, 10),
       nombre: d.titleTranslated || d.title,
       categoria: CATEGORIA(cats, tags),
       descripcionCorta: primera,

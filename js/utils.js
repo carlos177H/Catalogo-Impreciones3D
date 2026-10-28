@@ -20,6 +20,13 @@ App.clampQty = q => Math.max(1, Math.min(999, parseInt(q, 10) || 1));
 App.productos = () => PRODUCTOS.filter(p =>
   p.activo !== false && (!CONFIG.ocultarSinLicenciaComercial || p.fuente?.permiteVenta));
 App.byId = id => App.productos().find(p => p.id === id);
+App.bySku = sku => App.productos().find(p => (p.sku || "").toLowerCase() === String(sku).toLowerCase());
+App.skuOf = p => p.sku || ("3DC-" + String(p.id).padStart(4, "0"));
+// Enlace directo a la ficha del producto (abre el modal al cargar la página)
+App.productUrl = p => {
+  let base = CONFIG.urlSitio || (/^https?:/.test(location.protocol) ? location.origin + location.pathname : "");
+  return base ? base.replace(/#.*$/, "") + "#p=" + encodeURIComponent(App.skuOf(p)) : "";
+};
 
 const SIN_DESCUENTO = [{ min: 1, max: null, descuento: 0 }];
 App.escala = p => CONFIG.descuentosActivos ? (p.escalaDescuento || CONFIG.escalaDescuento) : SIN_DESCUENTO;
@@ -33,7 +40,7 @@ App.maxDiscount = p => Math.max(...App.escala(p).map(t => t.descuento));
 App.pct = d => Math.round(d * 100);
 
 App.textoBusqueda = p => App.norm([
-  p.nombre, p.categoria, p.descripcionCorta, p.descripcionDetallada, (p.etiquetas || []).join(" ")
+  p.nombre, p.sku, p.categoria, p.descripcionCorta, p.descripcionDetallada, (p.etiquetas || []).join(" ")
 ].join(" "));
 App.coincide = (p, q) => {
   const words = App.norm(q).trim().split(/\s+/).filter(Boolean);
