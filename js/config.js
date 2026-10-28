@@ -7,11 +7,11 @@ window.CONFIG = {
   // 52 = México + número a 10 dígitos (sin espacios ni +)
   whatsapp: "527721509872",
 
-  // ⚠️ DATOS DE EJEMPLO: reemplázalos por los reales
+  // Datos para transferencia (se muestran al elegir "Transferencia bancaria")
   banco: {
-    nombre: "NuBank",
-    clabe: "638180000193558418",   // 18 dígitos
-    titular: "Jose Carlos Granados Abraham"
+    nombre: "Nu México",
+    clabe: "63818000193558418",
+    titular: "José Carlos Granados Abraham"
   },
 
   // Pestañas del catálogo (el orden importa). "Todos" siempre va primero.

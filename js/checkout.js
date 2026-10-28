@@ -12,7 +12,7 @@ App.checkout = (() => {
   function open() {
     const c = App.drawer.customer(), t = App.cart.totals();
     const b = CONFIG.banco;
-    const clabeFmt = b.clabe.replace(/(\d{3})(\d{3})(\d{11})(\d{1})/, "$1 $2 $3 $4");
+    const clabeFmt = /^\d{18}$/.test(b.clabe) ? b.clabe.replace(/(\d{3})(\d{3})(\d{11})(\d{1})/, "$1 $2 $3 $4") : b.clabe.replace(/(\d{4})(?=\d)/g, "$1 ");
 
     $("#coInner").innerHTML = `
       <h2 id="coTitle">Confirmar pedido</h2>
