@@ -2,7 +2,7 @@
    CONFIGURACIÓN DEL NEGOCIO — edita aquí
    ========================================================= */
 window.CONFIG = {
-  negocio: "3D Catálogo",
+  negocio: "3D JCGA",
 
   // 52 = México + número a 10 dígitos (sin espacios ni +)
   whatsapp: "527721509872",
