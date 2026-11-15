@@ -1,7 +1,7 @@
 /* =========================================================
    ARRANQUE DE LA APP
    ========================================================= */
-(() => {
+(async () => {
   const { $, $$ } = App;
 
   // Cerrar capas: fondo oscuro, botones X, clic fuera del modal y tecla Escape
@@ -19,6 +19,26 @@
     ? e.map((t, i) => `<span class="perk">${["📦", "🎯", "🚀"][i] || "🏷️"} <b>${t.min}+ pz</b> −${App.pct(t.descuento)}% por pieza</span>`).join("")
     : `<span class="perk">🖨️ Impreso a pedido</span><span class="perk">🎨 Colores a elegir</span>`
   ) + `<span class="perk">💬 Pedidos por WhatsApp</span>`;
+
+  // ── Intentar cargar productos desde Supabase ──
+  const cargadoDeDB = await cargarProductosSupabase();
+  if (cargadoDeDB) {
+    console.log("[App] Productos cargados desde Supabase.");
+  } else {
+    console.log("[App] Usando productos del archivo estático.");
+  }
+
+  // ── Inicializar auth ──
+  await App.auth.init();
+
+  // Auth buttons
+  $("#authLoginBtn")?.addEventListener("click", () => App.auth.openLogin());
+  $("#authUserBtn")?.addEventListener("click", () => App.userPanel.open());
+
+  // Detectar hash de reset password
+  if (location.hash.includes("type=recovery") || location.hash.includes("reset-password")) {
+    App.auth.openResetPassword();
+  }
 
   App.drawer.init();
   App.productModal.init();

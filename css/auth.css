@@ -1,0 +1,135 @@
+/* =========================================================
+   ESTILOS: Auth Modal + User Panel
+   ========================================================= */
+
+/* ---------- Auth Modal ---------- */
+.auth-form { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
+.auth-form .field { margin: 0; }
+.auth-error {
+  color: #dc2626; font-size: .85rem; font-weight: 600;
+  background: #fef2f2; border: 1px solid #fecaca;
+  padding: 8px 12px; border-radius: 10px; display: none;
+}
+.auth-error:not(:empty) { display: block; }
+.auth-links {
+  text-align: center; margin-top: 16px; font-size: .88rem; color: var(--text-2);
+}
+.auth-links p { margin-top: 8px; }
+.link-btn {
+  background: none; border: none; color: var(--accent); cursor: pointer;
+  font: inherit; padding: 0; text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.link-btn:hover { color: var(--accent-dark, var(--accent)); }
+.auth-sub { color: var(--text-2); font-size: .9rem; margin-top: 4px; }
+.auth-success { text-align: center; padding: 20px 0; }
+.auth-success .big { font-size: 3rem; margin-bottom: 12px; }
+
+/* ---------- Header auth buttons ---------- */
+.auth-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: 1px solid var(--border); border-radius: 10px;
+  padding: 6px 14px; cursor: pointer; font: inherit;
+  font-size: .85rem; font-weight: 600; color: var(--text);
+  transition: all .15s;
+}
+.auth-btn:hover { background: var(--bg-2, #f5f5f5); }
+.auth-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+.auth-btn .lbl { display: inline; }
+@media (max-width: 600px) {
+  .auth-btn .lbl { display: none; }
+  .auth-btn { padding: 6px 10px; }
+}
+
+.auth-user-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--accent); color: #fff; border: none; border-radius: 10px;
+  padding: 5px 12px 5px 5px; cursor: pointer; font: inherit;
+  font-size: .85rem; font-weight: 600; transition: opacity .15s;
+}
+.auth-user-btn:hover { opacity: .9; }
+.auth-user-btn .up-mini-avatar {
+  width: 26px; height: 26px; border-radius: 8px;
+  background: rgba(255,255,255,.25); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .8rem;
+}
+
+/* ---------- User Panel (drawer) ---------- */
+.up-header {
+  display: flex; align-items: center; gap: 14px;
+  padding-bottom: 16px; border-bottom: 1px solid var(--border);
+}
+.up-avatar {
+  width: 52px; height: 52px; border-radius: 14px;
+  background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; font-weight: 800; flex-shrink: 0;
+}
+.up-name { font-size: 1.1rem; font-weight: 700; margin: 0; }
+.up-email { font-size: .82rem; color: var(--text-2); margin: 2px 0 0; }
+
+.up-tabs {
+  display: flex; gap: 4px; margin-top: 16px;
+  border-bottom: 2px solid var(--border); padding-bottom: 0;
+}
+.up-tab {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  padding: 8px 12px; margin-bottom: -2px; cursor: pointer;
+  font: inherit; font-size: .82rem; font-weight: 600; color: var(--text-2);
+  transition: all .15s; border-radius: 8px 8px 0 0;
+}
+.up-tab:hover { color: var(--text); background: var(--bg-2, #f5f5f5); }
+.up-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.up-content { padding: 16px 0; min-height: 200px; }
+.up-loading { text-align: center; padding: 40px 0; color: var(--text-2); }
+.up-empty { text-align: center; padding: 30px 0; }
+.up-empty .big { font-size: 2.5rem; margin-bottom: 8px; }
+.up-footer { padding-top: 12px; border-top: 1px solid var(--border); }
+.up-since { text-align: center; font-size: .78rem; color: var(--text-2); margin-top: 16px; }
+
+/* ---------- Favoritos ---------- */
+.up-favs { display: flex; flex-direction: column; gap: 10px; }
+.up-fav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px; border-radius: 12px;
+  background: var(--bg-2, #f9fafb); border: 1px solid var(--border);
+}
+.up-fav-item img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+.up-fav-info { flex: 1; min-width: 0; }
+.up-fav-name { font-weight: 600; font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.up-fav-price { font-size: .82rem; color: var(--accent); font-weight: 700; }
+.up-fav-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ---------- Pedidos ---------- */
+.up-orders { display: flex; flex-direction: column; gap: 10px; }
+.up-order {
+  padding: 12px; border-radius: 12px;
+  background: var(--bg-2, #f9fafb); border: 1px solid var(--border);
+}
+.up-order-head { display: flex; justify-content: space-between; align-items: center; }
+.up-order-id { font-weight: 700; font-size: .9rem; }
+.up-order-date { font-size: .78rem; color: var(--text-2); margin-left: 8px; }
+.up-order-status {
+  font-size: .75rem; font-weight: 700; padding: 3px 10px;
+  border-radius: 20px; background: #fef3c7; color: #92400e;
+}
+.up-order-status.done { background: #d1fae5; color: #065f46; }
+.up-order-status.cancel { background: #fee2e2; color: #991b1b; }
+.up-order-total { font-size: 1rem; font-weight: 700; margin-top: 6px; }
+.up-order-notes { font-size: .82rem; color: var(--text-2); margin-top: 4px; }
+.up-detail { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+.up-detail-item { display: flex; justify-content: space-between; font-size: .85rem; padding: 4px 0; }
+
+/* ---------- Botón favorito en product modal ---------- */
+.fav-btn {
+  background: none; border: 1px solid var(--border); border-radius: 10px;
+  width: 44px; height: 44px; cursor: pointer; font-size: 1.2rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; flex-shrink: 0;
+}
+.fav-btn:hover { background: #fee2e2; border-color: #fca5a5; }
+.fav-btn.active { background: #fee2e2; border-color: #f87171; color: #dc2626; }
+.pm-actions-row { display: flex; gap: 8px; }
+.pm-actions-row .btn { flex: 1; }
