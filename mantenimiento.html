@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D JCGA · En mantenimiento</title>
+<meta name="description" content="Estamos mejorando el catálogo. Volvemos pronto.">
+<link rel="icon" type="image/png" href="img/logo-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--accent:#10b981;--accent-dark:#059669;--bg:#fafbfc;--text:#1a1a2e;--text-2:#6b7280;--card:#fff;--border:#e5e7eb}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1117;--text:#e5e7eb;--text-2:#9ca3af;--card:#1a1d2e;--border:#2d3348}}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;overflow:hidden;position:relative}
+
+/* Engranajes animados de fondo */
+.gears{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:.06}
+.gear{position:absolute;font-size:4rem;animation:spin linear infinite}
+.gear.ccw{animation-name:spin-ccw}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes spin-ccw{from{transform:rotate(0)}to{transform:rotate(-360deg)}}
+
+.container{position:relative;z-index:1;max-width:520px;width:100%}
+.icon{font-size:5rem;margin-bottom:16px;animation:wobble 3s ease-in-out infinite}
+@keyframes wobble{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+h1{font-size:1.8rem;font-weight:800;margin-bottom:8px;line-height:1.2}
+h1 span{color:var(--accent)}
+.sub{color:var(--text-2);font-size:1rem;line-height:1.6;margin-bottom:28px}
+
+/* Barra de progreso animada */
+.progress-wrap{width:100%;max-width:320px;margin:0 auto 28px;background:var(--border);border-radius:20px;height:8px;overflow:hidden}
+.progress-bar{height:100%;width:45%;background:linear-gradient(90deg,var(--accent),var(--accent-dark));border-radius:20px;animation:loading 2.5s ease-in-out infinite}
+@keyframes loading{0%{width:15%;margin-left:0}50%{width:55%;margin-left:20%}100%{width:15%;margin-left:85%}}
+
+/* Card de soporte */
+.support-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 24px;margin-bottom:20px;text-align:left}
+.support-card h3{font-size:.9rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.support-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border);font-size:.88rem}
+.support-row:first-of-type{border-top:none}
+.support-row .emoji{font-size:1.2rem;flex-shrink:0}
+.support-row a{color:var(--accent);text-decoration:none;font-weight:600}
+.support-row a:hover{text-decoration:underline}
+
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px 28px;font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;text-decoration:none;transition:opacity .15s}
+.btn:hover{opacity:.9}
+
+.footer{margin-top:32px;font-size:.78rem;color:var(--text-2)}
+</style>
+</head>
+<body>
+
+<div class="gears">
+  <span class="gear" style="top:10%;left:8%;font-size:5rem;animation-duration:12s">⚙️</span>
+  <span class="gear ccw" style="top:15%;left:14%;font-size:3rem;animation-duration:8s">⚙️</span>
+  <span class="gear" style="top:60%;right:10%;font-size:6rem;animation-duration:15s">⚙️</span>
+  <span class="gear ccw" style="top:70%;right:18%;font-size:3.5rem;animation-duration:10s">⚙️</span>
+  <span class="gear" style="bottom:12%;left:20%;font-size:4rem;animation-duration:11s">⚙️</span>
+  <span class="gear ccw" style="top:30%;right:30%;font-size:2.5rem;animation-duration:9s">⚙️</span>
+</div>
+
+<div class="container">
+  <div class="icon">🔧</div>
+  <h1>Estamos <span>mejorando</span> tu experiencia</h1>
+  <p class="sub">Nuestro catálogo está en mantenimiento para traerte nuevas funciones. Volvemos muy pronto.</p>
+
+  <div class="progress-wrap"><div class="progress-bar"></div></div>
+
+  <div class="support-card">
+    <h3>🛟 ¿Necesitas ayuda?</h3>
+    <div class="support-row">
+      <span class="emoji">💬</span>
+      <div>WhatsApp: <a href="https://wa.me/527721509872" target="_blank">772 150 9872</a></div>
+    </div>
+    <div class="support-row">
+      <span class="emoji">📸</span>
+      <div>Instagram: <a href="https://instagram.com/3d_jcga" target="_blank">@3d_jcga</a></div>
+    </div>
+    <div class="support-row">
+      <span class="emoji">📧</span>
+      <div>Correo: <a href="mailto:3djcga@gmail.com">3djcga@gmail.com</a></div>
+    </div>
+  </div>
+
+  <a class="btn" href="https://wa.me/527721509872" target="_blank">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 0 0 .611.611l4.458-1.495A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.94 9.94 0 0 1-5.39-1.586l-.386-.232-2.65.888.888-2.65-.232-.386A9.94 9.94 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+    Escríbenos por WhatsApp
+  </a>
+
+  <p class="footer">© 2026 3D JCGA · Pachuca, Hidalgo</p>
+</div>
+
+</body>
+</html>
