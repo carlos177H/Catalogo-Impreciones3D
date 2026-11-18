@@ -17,6 +17,9 @@ function initSupabase() {
     console.warn("[Supabase] SDK no cargado, usando datos locales.");
     return null;
   }
+  // Guardar el hash ANTES de crear el cliente: el SDK lo procesa y lo borra
+  // (enlaces de confirmación de correo y recuperación de contraseña).
+  window.AUTH_URL_HASH = location.hash;
   try {
     window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     console.log("[Supabase] Cliente inicializado.");

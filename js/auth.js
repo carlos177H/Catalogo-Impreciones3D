@@ -1,49 +1,127 @@
 /* =========================================================
    AUTENTICACIÓN con Supabase Auth
    ---------------------------------------------------------
-   Registro, login, logout, verificación de correo,
-   recuperación de contraseña, y sesión persistente.
+   Registro (con teléfono obligatorio), login, logout,
+   verificación de correo (con reenvío), recuperación y
+   cambio de contraseña, y sesión persistente.
+
+   El perfil en la tabla `usuarios` lo crea la BD con un
+   trigger (ver sql/etapa1_auth.sql), no el navegador.
 
    Requiere: supabase.js (inicializado antes)
    ========================================================= */
 App.auth = (() => {
-  const { $, $$, esc } = App;
+  const { $, esc } = App;
+
+  const MIN_PASS = 8;
 
   /* ---------- Estado ---------- */
   let user = null;      // Supabase auth user
-  let perfil = null;    // Row from 'usuarios' table
-  const listeners = []; // callbacks on auth change
+  let perfil = null;    // Fila de la tabla 'usuarios'
+  const listeners = []; // callbacks al cambiar la sesión
 
   function onAuthChange(fn) { listeners.push(fn); }
   function notify() { listeners.forEach(fn => fn(user, perfil)); }
+
+  /* URL a la que regresan los enlaces de los correos (local o producción) */
+  function urlBase() {
+    return CONFIG.urlSitio || window.location.origin + window.location.pathname;
+  }
+
+  /* ---------- Utilidades ---------- */
+  function normalizarTelefono(v) {
+    let d = String(v || "").replace(/\D/g, "");
+    if (d.length === 12 && d.startsWith("52")) d = d.slice(2);
+    if (d.length === 13 && d.startsWith("521")) d = d.slice(3);
+    return d;
+  }
+  const telefonoValido = t => /^\d{10}$/.test(t);
+  const emailValido = e => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
+
+  function traducirError(err) {
+    const m = (err?.message || "").toLowerCase();
+    if (m.includes("invalid login")) return "Correo o contraseña incorrectos.";
+    if (m.includes("email not confirmed")) return "Tu correo aún no está verificado.";
+    if (m.includes("already registered") || m.includes("already been registered")) return "Este correo ya está registrado. ¿Quieres iniciar sesión?";
+    if (m.includes("rate limit") || m.includes("too many") || err?.status === 429) return "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.";
+    if (m.includes("for security purposes")) {
+      const s = m.match(/(\d+)\s*seconds?/);
+      return `Por seguridad, espera ${s ? s[1] + " segundos" : "un momento"} antes de volver a intentarlo.`;
+    }
+    if (m.includes("password should") || m.includes("weak password")) return `La contraseña es muy débil. Usa al menos ${MIN_PASS} caracteres con letras y números.`;
+    if (m.includes("same password") || m.includes("different from the old")) return "La nueva contraseña debe ser distinta a la anterior.";
+    if (m.includes("invalid email") || m.includes("unable to validate email")) return "El correo no es válido.";
+    if (m.includes("error sending")) return "No pudimos enviar el correo en este momento. Inténtalo en unos minutos o contáctanos por WhatsApp.";
+    if (m.includes("signups not allowed")) return "Por ahora no se permiten registros nuevos.";
+    if (m.includes("session") && m.includes("missing")) return "El enlace expiró. Solicita uno nuevo.";
+    if (m.includes("failed to fetch") || m.includes("network")) return "Sin conexión. Revisa tu internet.";
+    return err?.message || "Ocurrió un error. Inténtalo de nuevo.";
+  }
 
   /* ---------- Init: escuchar cambios de sesión ---------- */
   async function init() {
     const sb = window.supabaseClient;
     if (!sb) return;
 
-    // Listener de cambio de auth
-    sb.auth.onAuthStateChange(async (event, session) => {
+    sb.auth.onAuthStateChange((event, session) => {
       console.log("[Auth] Evento:", event);
-      if (session?.user) {
-        user = session.user;
-        await cargarPerfil();
-      } else {
-        user = null;
-        perfil = null;
-      }
-      updateUI();
-      notify();
+      if (event === "PASSWORD_RECOVERY") setTimeout(openResetPassword, 0);
+      // No hacer llamadas a la BD dentro del callback (puede bloquear el SDK)
+      setTimeout(() => aplicarSesion(session), 0);
     });
 
-    // Verificar sesión existente
     const { data: { session } } = await sb.auth.getSession();
-    if (session?.user) {
-      user = session.user;
-      await cargarPerfil();
+    await aplicarSesion(session);
+    procesarEnlaceDeCorreo();
+  }
+
+  // Evita procesar dos veces la misma sesión (evento inicial + getSession)
+  let ultimoId;         // id de usuario ya aplicado (undefined = nada aún)
+  let enCurso = null;   // { id, promise } de la carga en progreso
+  function aplicarSesion(session) {
+    const nuevoId = session?.user?.id || null;
+    if (enCurso && enCurso.id === nuevoId) return enCurso.promise;
+    if (nuevoId === ultimoId) { if (session?.user) user = session.user; return Promise.resolve(); }
+
+    const promise = (async () => {
+      user = session?.user || null;
+      perfil = null;
+      if (user) await cargarPerfil();
+      ultimoId = nuevoId;
       updateUI();
       notify();
+    })().finally(() => { if (enCurso?.promise === promise) enCurso = null; });
+    enCurso = { id: nuevoId, promise };
+    return promise;
+  }
+
+  /* Enlaces que llegan por correo: confirmación, recuperación o error */
+  function procesarEnlaceDeCorreo() {
+    const raw = window.AUTH_URL_HASH || "";
+    if (!raw) return;
+    const h = new URLSearchParams(raw.replace(/^#/, ""));
+    const limpiar = () => history.replaceState(null, "", location.pathname + location.search);
+
+    if (h.get("error") || h.get("error_code")) {
+      limpiar();
+      const code = h.get("error_code") || "";
+      const msg = code === "otp_expired"
+        ? "El enlace expiró o ya fue usado. Solicita uno nuevo."
+        : (h.get("error_description") || "El enlace no es válido.").replace(/\+/g, " ");
+      openLogin(msg);
+      return;
     }
+    const type = h.get("type");
+    if (type === "recovery" || raw.includes("reset-password")) {
+      openResetPassword();
+    } else if (type === "signup" || type === "email" || type === "invite") {
+      limpiar();
+      App.toast("✅ ¡Correo verificado! Bienvenido.");
+    } else if (type === "email_change") {
+      limpiar();
+      App.toast("✅ Correo actualizado.");
+    }
+    window.AUTH_URL_HASH = "";
   }
 
   /* ---------- Cargar perfil de la tabla usuarios ---------- */
@@ -54,32 +132,16 @@ App.auth = (() => {
       .from("usuarios")
       .select("*")
       .eq("id_auth", user.id)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code === "PGRST116") {
-      // No existe perfil → crearlo
-      const { data: nuevo, error: errIns } = await sb
-        .from("usuarios")
-        .insert({
-          id_auth: user.id,
-          nombre_completo: user.user_metadata?.nombre || user.email.split("@")[0],
-          email: user.email,
-          telefono: user.user_metadata?.telefono || null,
-          password_hash: "supabase_auth", // No usamos esta columna con Supabase Auth
-          verificado: !!user.email_confirmed_at
-        })
-        .select()
-        .single();
-      if (!errIns) perfil = nuevo;
-      else console.error("[Auth] Error creando perfil:", errIns);
-    } else if (!error) {
-      perfil = data;
-      // Actualizar último acceso
-      sb.from("usuarios")
-        .update({ ultimo_acceso: new Date().toISOString() })
-        .eq("id_usuario", data.id_usuario)
-        .then(() => {});
-    }
+    if (error) { console.error("[Auth] Error cargando perfil:", error); return; }
+    if (!data) { console.warn("[Auth] El usuario no tiene perfil en 'usuarios'."); return; }
+
+    perfil = data;
+    sb.from("usuarios")
+      .update({ ultimo_acceso: new Date().toISOString() })
+      .eq("id_usuario", data.id_usuario)
+      .then(() => {});
   }
 
   /* ---------- Registro ---------- */
@@ -92,31 +154,41 @@ App.auth = (() => {
       password,
       options: {
         data: { nombre, telefono },
-        emailRedirectTo: CONFIG.urlSitio || window.location.origin + window.location.pathname
+        emailRedirectTo: urlBase()
       }
     });
-
     if (error) return { error };
 
-    // Si Supabase requiere confirmación de email
-    if (data.user && !data.session) {
-      return { ok: true, needsVerification: true };
+    // Con "Confirm email" activo, si el correo ya existe Supabase responde
+    // sin error pero con identities vacío.
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      return { error: { message: "already registered" } };
     }
-
+    if (data.user && !data.session) return { ok: true, needsVerification: true };
     return { ok: true, user: data.user };
   }
 
-  /* ---------- Login ---------- */
+  /* ---------- Reenviar correo de verificación ---------- */
+  async function reenviarVerificacion(email) {
+    const sb = window.supabaseClient;
+    if (!sb) return { error: { message: "Sin conexión" } };
+    const { error } = await sb.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: urlBase() }
+    });
+    return error ? { error } : { ok: true };
+  }
+
+  /* ---------- Login / Logout ---------- */
   async function login(email, password) {
     const sb = window.supabaseClient;
     if (!sb) return { error: { message: "Sin conexión a la base de datos" } };
-
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
     if (error) return { error };
     return { ok: true, user: data.user };
   }
 
-  /* ---------- Logout ---------- */
   async function logout() {
     const sb = window.supabaseClient;
     if (!sb) return;
@@ -127,26 +199,26 @@ App.auth = (() => {
     notify();
   }
 
-  /* ---------- Recuperar contraseña ---------- */
+  /* ---------- Contraseña ---------- */
   async function recuperarPassword(email) {
     const sb = window.supabaseClient;
     if (!sb) return { error: { message: "Sin conexión" } };
-
-    const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: (CONFIG.urlSitio || window.location.origin + window.location.pathname) + "#reset-password"
-    });
-    if (error) return { error };
-    return { ok: true };
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: urlBase() });
+    return error ? { error } : { ok: true };
   }
 
-  /* ---------- Actualizar contraseña (desde enlace de recuperación) ---------- */
   async function actualizarPassword(newPassword) {
     const sb = window.supabaseClient;
     if (!sb) return { error: { message: "Sin conexión" } };
-
     const { error } = await sb.auth.updateUser({ password: newPassword });
-    if (error) return { error };
-    return { ok: true };
+    return error ? { error } : { ok: true };
+  }
+
+  function validarPassword(pass, pass2) {
+    if (pass.length < MIN_PASS) return `La contraseña debe tener al menos ${MIN_PASS} caracteres.`;
+    if (!/[a-zA-Z]/.test(pass) || !/\d/.test(pass)) return "La contraseña debe incluir letras y números.";
+    if (pass !== pass2) return "Las contraseñas no coinciden.";
+    return "";
   }
 
   /* ---------- Actualizar perfil ---------- */
@@ -165,77 +237,88 @@ App.auth = (() => {
     return { ok: true, perfil: data };
   }
 
-  /* ---------- UI: actualizar header ---------- */
+  /* ---------- UI: header ---------- */
+  function nombreVisible() {
+    const n = perfil?.nombre_completo || user?.user_metadata?.nombre || user?.email || "";
+    return n.split(/[\s@]/)[0];
+  }
+
   function updateUI() {
     const btnLogin = $("#authLoginBtn");
     const btnUser = $("#authUserBtn");
-    const userName = $("#authUserName");
     if (!btnLogin || !btnUser) return;
 
-    if (user && perfil) {
+    if (user) {
+      const nombre = nombreVisible();
       btnLogin.style.display = "none";
       btnUser.style.display = "";
-      userName.textContent = perfil.nombre_completo.split(" ")[0]; // primer nombre
+      $("#authUserName").textContent = nombre;
+      const av = $("#authAvatar");
+      if (av) av.textContent = (nombre.charAt(0) || "?").toUpperCase();
     } else {
       btnLogin.style.display = "";
       btnUser.style.display = "none";
     }
   }
 
-  /* ---------- Modales de Auth ---------- */
-  function openLogin() {
+  /* ---------- Modales ---------- */
+  function mostrar(html, bind) {
     const m = $("#authModal");
-    $("#authModalInner").innerHTML = loginHTML();
-    bindLoginEvents();
-    App.openLayer(m);
+    $("#authModalInner").innerHTML = html;
+    bindPasswordToggles();
+    bind?.();
+    if (App.topLayer() !== m) App.openLayer(m);
+    setTimeout(() => $("#authModalInner input:not([disabled])")?.focus(), 60);
   }
 
-  function openRegistro() {
-    const m = $("#authModal");
-    $("#authModalInner").innerHTML = registroHTML();
-    bindRegistroEvents();
-    App.openLayer(m);
+  function openLogin(msg, email) {
+    mostrar(loginHTML(email), bindLoginEvents);
+    if (msg) showError("#loginError", msg);
+  }
+  const openRegistro = () => mostrar(registroHTML(), bindRegistroEvents);
+  const openRecuperar = email => mostrar(recuperarHTML(email), bindRecuperarEvents);
+  const openResetPassword = () => mostrar(resetPasswordHTML(false), bindResetPasswordEvents);
+  const openCambiarPassword = () => mostrar(resetPasswordHTML(true), bindResetPasswordEvents);
+
+  /* ---------- Templates ---------- */
+  const EYE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
+  const EYE_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-6.5 0-10-7-10-7a18.4 18.4 0 0 1 5.06-5.94M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>`;
+
+  function passField(id, label, placeholder, autocomplete, req = false) {
+    return `
+      <div class="field">
+        <label for="${id}">${label}${req ? ' <span class="req">*</span>' : ""}</label>
+        <div class="pass-wrap">
+          <input id="${id}" type="password" placeholder="${placeholder}" autocomplete="${autocomplete}" required>
+          <button type="button" class="pass-toggle" data-pass-toggle="${id}" aria-label="Mostrar contraseña">${EYE}</button>
+        </div>
+      </div>`;
   }
 
-  function openRecuperar() {
-    $("#authModalInner").innerHTML = recuperarHTML();
-    bindRecuperarEvents();
-  }
-
-  function openResetPassword() {
-    const m = $("#authModal");
-    $("#authModalInner").innerHTML = resetPasswordHTML();
-    bindResetPasswordEvents();
-    App.openLayer(m);
-  }
-
-  /* ---------- Templates HTML ---------- */
-  function loginHTML() {
+  function loginHTML(email = "") {
     return `
       <h2 id="authTitle">Iniciar sesión</h2>
-      <p class="auth-sub">Accede a tu cuenta para ver tu historial y guardar favoritos.</p>
+      <p class="auth-sub">Accede para guardar tu carrito, favoritos y ver tus pedidos.</p>
       <form id="loginForm" class="auth-form" novalidate>
         <div class="field">
           <label for="loginEmail">Correo electrónico</label>
-          <input id="loginEmail" type="email" placeholder="tu@correo.com" autocomplete="email" required>
+          <input id="loginEmail" type="email" placeholder="tu@correo.com" autocomplete="email" value="${esc(email)}" required>
         </div>
-        <div class="field">
-          <label for="loginPass">Contraseña</label>
-          <input id="loginPass" type="password" placeholder="Tu contraseña" autocomplete="current-password" required>
-        </div>
+        ${passField("loginPass", "Contraseña", "Tu contraseña", "current-password")}
         <div class="auth-error" id="loginError" role="alert"></div>
-        <button class="btn btn-primary btn-block" type="submit" id="loginSubmit" style="height:48px">Entrar</button>
+        <div id="loginResend"></div>
+        <button class="btn btn-primary btn-block auth-submit" type="submit" id="loginSubmit">Entrar</button>
       </form>
       <div class="auth-links">
-        <button class="link-btn" id="goRecuperar">¿Olvidaste tu contraseña?</button>
-        <p>¿No tienes cuenta? <button class="link-btn" id="goRegistro"><b>Regístrate gratis</b></button></p>
+        <button type="button" class="link-btn" id="goRecuperar">¿Olvidaste tu contraseña?</button>
+        <p>¿No tienes cuenta? <button type="button" class="link-btn" id="goRegistro"><b>Regístrate gratis</b></button></p>
       </div>`;
   }
 
   function registroHTML() {
     return `
       <h2 id="authTitle">Crear cuenta</h2>
-      <p class="auth-sub">Regístrate para guardar tu carrito, favoritos y ver tu historial de pedidos.</p>
+      <p class="auth-sub">Guarda tu carrito en cualquier dispositivo y sigue tus pedidos.</p>
       <form id="registroForm" class="auth-form" novalidate>
         <div class="field">
           <label for="regNombre">Nombre completo <span class="req">*</span></label>
@@ -246,92 +329,134 @@ App.auth = (() => {
           <input id="regEmail" type="email" placeholder="tu@correo.com" autocomplete="email" required>
         </div>
         <div class="field">
-          <label for="regTel">Teléfono (opcional)</label>
-          <input id="regTel" type="tel" placeholder="Ej. 7721234567" autocomplete="tel">
+          <label for="regTel">WhatsApp / Teléfono <span class="req">*</span></label>
+          <input id="regTel" type="tel" inputmode="numeric" placeholder="10 dígitos, ej. 7721234567" autocomplete="tel-national" maxlength="16" required>
         </div>
-        <div class="field">
-          <label for="regPass">Contraseña <span class="req">*</span></label>
-          <input id="regPass" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required minlength="6">
-          <span class="hint">Al menos 6 caracteres</span>
-        </div>
-        <div class="field">
-          <label for="regPass2">Confirmar contraseña <span class="req">*</span></label>
-          <input id="regPass2" type="password" placeholder="Repite tu contraseña" autocomplete="new-password" required>
-        </div>
+        ${passField("regPass", "Contraseña", `Mínimo ${MIN_PASS} caracteres`, "new-password", true)}
+        <div class="pass-meter" id="regMeter" aria-hidden="true"><span></span></div>
+        ${passField("regPass2", "Confirmar contraseña", "Repite tu contraseña", "new-password", true)}
+        <p class="field-note">Usa al menos ${MIN_PASS} caracteres con letras y números. Te enviaremos un correo para verificar tu cuenta.</p>
         <div class="auth-error" id="regError" role="alert"></div>
-        <button class="btn btn-primary btn-block" type="submit" id="regSubmit" style="height:48px">Crear mi cuenta</button>
+        <button class="btn btn-primary btn-block auth-submit" type="submit" id="regSubmit">Crear mi cuenta</button>
       </form>
       <div class="auth-links">
-        <p>¿Ya tienes cuenta? <button class="link-btn" id="goLogin"><b>Inicia sesión</b></button></p>
+        <p>¿Ya tienes cuenta? <button type="button" class="link-btn" id="goLogin"><b>Inicia sesión</b></button></p>
       </div>`;
   }
 
-  function recuperarHTML() {
+  function recuperarHTML(email = "") {
     return `
       <h2 id="authTitle">Recuperar contraseña</h2>
-      <p class="auth-sub">Te enviaremos un enlace a tu correo para restablecer tu contraseña.</p>
+      <p class="auth-sub">Te enviaremos un enlace a tu correo para crear una nueva contraseña.</p>
       <form id="recuperarForm" class="auth-form" novalidate>
         <div class="field">
           <label for="recEmail">Correo electrónico</label>
-          <input id="recEmail" type="email" placeholder="tu@correo.com" autocomplete="email" required>
+          <input id="recEmail" type="email" placeholder="tu@correo.com" autocomplete="email" value="${esc(email)}" required>
         </div>
         <div class="auth-error" id="recError" role="alert"></div>
-        <button class="btn btn-primary btn-block" type="submit" id="recSubmit" style="height:48px">Enviar enlace</button>
+        <button class="btn btn-primary btn-block auth-submit" type="submit" id="recSubmit">Enviar enlace</button>
       </form>
       <div class="auth-links">
-        <button class="link-btn" id="goLoginBack">← Volver a iniciar sesión</button>
+        <button type="button" class="link-btn" id="goLoginBack">← Volver a iniciar sesión</button>
       </div>`;
   }
 
-  function resetPasswordHTML() {
+  function resetPasswordHTML(desdePanel) {
     return `
-      <h2 id="authTitle">Nueva contraseña</h2>
+      <h2 id="authTitle">${desdePanel ? "Cambiar contraseña" : "Nueva contraseña"}</h2>
       <p class="auth-sub">Escribe tu nueva contraseña.</p>
       <form id="resetForm" class="auth-form" novalidate>
-        <div class="field">
-          <label for="resetPass">Nueva contraseña</label>
-          <input id="resetPass" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required minlength="6">
-        </div>
-        <div class="field">
-          <label for="resetPass2">Confirmar contraseña</label>
-          <input id="resetPass2" type="password" placeholder="Repite tu contraseña" autocomplete="new-password" required>
-        </div>
+        ${passField("resetPass", "Nueva contraseña", `Mínimo ${MIN_PASS} caracteres`, "new-password")}
+        <div class="pass-meter" id="resetMeter" aria-hidden="true"><span></span></div>
+        ${passField("resetPass2", "Confirmar contraseña", "Repite tu contraseña", "new-password")}
         <div class="auth-error" id="resetError" role="alert"></div>
-        <button class="btn btn-primary btn-block" type="submit" style="height:48px">Actualizar contraseña</button>
+        <button class="btn btn-primary btn-block auth-submit" type="submit" id="resetSubmit">Guardar contraseña</button>
       </form>`;
   }
 
-  function verificationHTML() {
+  function verificationHTML(email) {
     return `
       <div class="auth-success">
         <div class="big">📧</div>
         <h2 id="authTitle">Revisa tu correo</h2>
-        <p>Te enviamos un enlace de verificación. Haz clic en él para activar tu cuenta.</p>
-        <p class="auth-sub" style="margin-top:12px">Si no lo ves, revisa tu carpeta de spam.</p>
-        <button class="btn btn-ghost btn-block" data-close style="margin-top:16px">Entendido</button>
+        <p>Enviamos un enlace de verificación a <b>${esc(email)}</b>. Ábrelo para activar tu cuenta.</p>
+        <p class="auth-sub" style="margin-top:12px">¿No llegó? Revisa spam o promociones.</p>
+        <div class="auth-error" id="verError" role="alert"></div>
+        <button type="button" class="btn btn-ghost btn-block" id="verResend" style="margin-top:16px">Reenviar correo</button>
+        <button type="button" class="btn btn-primary btn-block" id="verGoLogin" style="margin-top:8px">Ya lo verifiqué, iniciar sesión</button>
       </div>`;
   }
 
-  /* ---------- Bind Events ---------- */
+  /* ---------- Helpers de UI ---------- */
   function showError(id, msg) {
     const el = $(id);
+    if (!el) return;
     el.textContent = msg;
     el.style.display = msg ? "" : "none";
   }
 
   function setLoading(btn, loading) {
+    if (!btn) return;
     btn.disabled = loading;
     btn.dataset.originalText = btn.dataset.originalText || btn.textContent;
-    btn.textContent = loading ? "Cargando…" : btn.dataset.originalText;
+    btn.textContent = loading ? "Un momento…" : btn.dataset.originalText;
   }
 
+  function bindPasswordToggles() {
+    $("#authModalInner").querySelectorAll("[data-pass-toggle]").forEach(b => {
+      b.addEventListener("click", () => {
+        const inp = $("#" + b.dataset.passToggle);
+        const mostrarTxt = inp.type === "password";
+        inp.type = mostrarTxt ? "text" : "password";
+        b.innerHTML = mostrarTxt ? EYE_OFF : EYE;
+        b.setAttribute("aria-label", mostrarTxt ? "Ocultar contraseña" : "Mostrar contraseña");
+      });
+    });
+  }
+
+  function bindMeter(inputId, meterId) {
+    const inp = $(inputId), meter = $(meterId);
+    if (!inp || !meter) return;
+    inp.addEventListener("input", () => {
+      const v = inp.value;
+      let s = 0;
+      if (v.length >= MIN_PASS) s++;
+      if (/[a-zA-Z]/.test(v) && /\d/.test(v)) s++;
+      if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++;
+      if (/[^a-zA-Z0-9]/.test(v) || v.length >= 12) s++;
+      meter.dataset.level = v ? s : "";
+    });
+  }
+
+  /* Botón de reenvío con espera de 60 s (límite de Supabase) */
+  function bindResend(btn, email, errId) {
+    btn.addEventListener("click", async () => {
+      showError(errId, "");
+      setLoading(btn, true);
+      const res = await reenviarVerificacion(email);
+      btn.dataset.originalText = "Reenviar correo";
+      setLoading(btn, false);
+      if (res.error) return showError(errId, traducirError(res.error));
+      App.toast("📧 Correo reenviado");
+      let s = 60;
+      btn.disabled = true;
+      const t = setInterval(() => {
+        btn.textContent = `Reenviar en ${--s}s`;
+        if (s <= 0) { clearInterval(t); btn.disabled = false; btn.textContent = "Reenviar correo"; }
+      }, 1000);
+    });
+  }
+
+  /* ---------- Eventos ---------- */
   function bindLoginEvents() {
     $("#loginForm").addEventListener("submit", async e => {
       e.preventDefault();
       showError("#loginError", "");
+      $("#loginResend").innerHTML = "";
       const email = $("#loginEmail").value.trim();
       const pass = $("#loginPass").value;
       if (!email || !pass) return showError("#loginError", "Completa todos los campos.");
+      if (!emailValido(email)) return showError("#loginError", "Escribe un correo válido.");
 
       const btn = $("#loginSubmit");
       setLoading(btn, true);
@@ -339,55 +464,56 @@ App.auth = (() => {
       setLoading(btn, false);
 
       if (res.error) {
-        const msg = res.error.message.includes("Invalid login")
-          ? "Correo o contraseña incorrectos."
-          : res.error.message.includes("Email not confirmed")
-          ? "Debes verificar tu correo antes de iniciar sesión. Revisa tu bandeja."
-          : res.error.message;
-        return showError("#loginError", msg);
+        showError("#loginError", traducirError(res.error));
+        if ((res.error.message || "").toLowerCase().includes("email not confirmed")) {
+          $("#loginResend").innerHTML = `<button type="button" class="btn btn-ghost btn-block" id="loginResendBtn">Reenviar correo de verificación</button>`;
+          bindResend($("#loginResendBtn"), email, "#loginError");
+        }
+        return;
       }
-
       App.toast("👋 ¡Bienvenido!");
       App.closeLayer($("#authModal"));
     });
-    $("#goRegistro")?.addEventListener("click", openRegistro);
-    $("#goRecuperar")?.addEventListener("click", openRecuperar);
+    $("#goRegistro").addEventListener("click", openRegistro);
+    $("#goRecuperar").addEventListener("click", () => openRecuperar($("#loginEmail").value.trim()));
   }
 
   function bindRegistroEvents() {
+    bindMeter("#regPass", "#regMeter");
     $("#registroForm").addEventListener("submit", async e => {
       e.preventDefault();
       showError("#regError", "");
-      const nombre = $("#regNombre").value.trim();
-      const email = $("#regEmail").value.trim();
-      const tel = $("#regTel").value.trim();
+      const nombre = $("#regNombre").value.trim().replace(/\s+/g, " ");
+      const email = $("#regEmail").value.trim().toLowerCase();
+      const tel = normalizarTelefono($("#regTel").value);
       const pass = $("#regPass").value;
       const pass2 = $("#regPass2").value;
 
-      if (!nombre || !email || !pass) return showError("#regError", "Completa los campos obligatorios.");
-      if (pass.length < 6) return showError("#regError", "La contraseña debe tener al menos 6 caracteres.");
-      if (pass !== pass2) return showError("#regError", "Las contraseñas no coinciden.");
+      if (!nombre || !email || !tel || !pass) return showError("#regError", "Completa los campos obligatorios.");
+      if (nombre.length < 3) return showError("#regError", "Escribe tu nombre completo.");
+      if (!emailValido(email)) return showError("#regError", "Escribe un correo válido.");
+      if (!telefonoValido(tel)) return showError("#regError", "El teléfono debe tener 10 dígitos.");
+      const errPass = validarPassword(pass, pass2);
+      if (errPass) return showError("#regError", errPass);
 
       const btn = $("#regSubmit");
       setLoading(btn, true);
       const res = await registrar(email, pass, nombre, tel);
       setLoading(btn, false);
 
-      if (res.error) {
-        const msg = res.error.message.includes("already registered")
-          ? "Este correo ya está registrado. ¿Quieres iniciar sesión?"
-          : res.error.message;
-        return showError("#regError", msg);
-      }
+      if (res.error) return showError("#regError", traducirError(res.error));
 
       if (res.needsVerification) {
-        $("#authModalInner").innerHTML = verificationHTML();
+        mostrar(verificationHTML(email), () => {
+          bindResend($("#verResend"), email, "#verError");
+          $("#verGoLogin").addEventListener("click", () => openLogin("", email));
+        });
       } else {
         App.toast("🎉 ¡Cuenta creada!");
         App.closeLayer($("#authModal"));
       }
     });
-    $("#goLogin")?.addEventListener("click", () => { openLogin(); /* reopen */ });
+    $("#goLogin").addEventListener("click", () => openLogin("", $("#regEmail").value.trim()));
   }
 
   function bindRecuperarEvents() {
@@ -395,54 +521,58 @@ App.auth = (() => {
       e.preventDefault();
       showError("#recError", "");
       const email = $("#recEmail").value.trim();
-      if (!email) return showError("#recError", "Escribe tu correo.");
+      if (!emailValido(email)) return showError("#recError", "Escribe un correo válido.");
 
       const btn = $("#recSubmit");
       setLoading(btn, true);
       const res = await recuperarPassword(email);
       setLoading(btn, false);
+      if (res.error) return showError("#recError", traducirError(res.error));
 
-      if (res.error) return showError("#recError", res.error.message);
-
-      $("#authModalInner").innerHTML = `
+      mostrar(`
         <div class="auth-success">
           <div class="big">📧</div>
           <h2 id="authTitle">Enlace enviado</h2>
-          <p>Si el correo existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.</p>
-          <button class="btn btn-ghost btn-block" data-close style="margin-top:16px">Entendido</button>
-        </div>`;
+          <p>Si <b>${esc(email)}</b> tiene una cuenta, recibirás un enlace para crear una nueva contraseña.</p>
+          <p class="auth-sub" style="margin-top:12px">El enlace vence en 1 hora. Revisa también spam.</p>
+          <button type="button" class="btn btn-ghost btn-block" data-close-auth style="margin-top:16px">Entendido</button>
+        </div>`, () => {
+        $("[data-close-auth]").addEventListener("click", () => App.closeLayer($("#authModal")));
+      });
     });
-    $("#goLoginBack")?.addEventListener("click", () => {
-      $("#authModalInner").innerHTML = loginHTML();
-      bindLoginEvents();
-    });
+    $("#goLoginBack").addEventListener("click", () => openLogin("", $("#recEmail").value.trim()));
   }
 
   function bindResetPasswordEvents() {
+    bindMeter("#resetPass", "#resetMeter");
     $("#resetForm").addEventListener("submit", async e => {
       e.preventDefault();
       showError("#resetError", "");
       const pass = $("#resetPass").value;
-      const pass2 = $("#resetPass2").value;
-      if (pass.length < 6) return showError("#resetError", "Mínimo 6 caracteres.");
-      if (pass !== pass2) return showError("#resetError", "Las contraseñas no coinciden.");
+      const errPass = validarPassword(pass, $("#resetPass2").value);
+      if (errPass) return showError("#resetError", errPass);
 
+      const btn = $("#resetSubmit");
+      setLoading(btn, true);
       const res = await actualizarPassword(pass);
-      if (res.error) return showError("#resetError", res.error.message);
+      setLoading(btn, false);
+      if (res.error) return showError("#resetError", traducirError(res.error));
 
+      history.replaceState(null, "", location.pathname + location.search);
       App.toast("✅ Contraseña actualizada");
       App.closeLayer($("#authModal"));
     });
   }
 
   /* ---------- Getters ---------- */
-  function getUser() { return user; }
-  function getPerfil() { return perfil; }
-  function isLoggedIn() { return !!user; }
+  const getUser = () => user;
+  const getPerfil = () => perfil;
+  const isLoggedIn = () => !!user;
 
   return {
-    init, openLogin, openRegistro, openRecuperar, openResetPassword,
-    login, logout, registrar, recuperarPassword, actualizarPerfil,
+    init, openLogin, openRegistro, openRecuperar, openResetPassword, openCambiarPassword,
+    login, logout, registrar, recuperarPassword, actualizarPerfil, reenviarVerificacion,
+    normalizarTelefono, telefonoValido, traducirError,
     getUser, getPerfil, isLoggedIn, onAuthChange
   };
 })();

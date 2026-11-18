@@ -35,10 +35,7 @@
   $("#authLoginBtn")?.addEventListener("click", () => App.auth.openLogin());
   $("#authUserBtn")?.addEventListener("click", () => App.userPanel.open());
 
-  // Detectar hash de reset password
-  if (location.hash.includes("type=recovery") || location.hash.includes("reset-password")) {
-    App.auth.openResetPassword();
-  }
+  // (Los enlaces de correo — verificación y recuperación — los procesa App.auth.init)
 
   App.drawer.init();
   App.productModal.init();

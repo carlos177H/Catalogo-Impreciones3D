@@ -2,8 +2,48 @@
    ESTILOS: Auth Modal + User Panel
    ========================================================= */
 
+/* Alias hacia los tokens de styles.css */
+:root {
+  --text: var(--ink);
+  --text-2: var(--ink-2);
+  --border: var(--line);
+  --bg-2: var(--surface-2);
+  --accent-dark: var(--accent-ink);
+}
+
 /* ---------- Auth Modal ---------- */
 .auth-form { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
+.auth-submit { height: 48px; }
+.auth-form .field-note { margin: -4px 0 0; }
+
+/* Mostrar / ocultar contraseña */
+.pass-wrap { position: relative; }
+.pass-wrap input { padding-right: 46px; }
+.pass-toggle {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 36px; height: 36px; border: none; background: none; border-radius: 10px;
+  color: var(--ink-3); cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.pass-toggle:hover { color: var(--ink); background: var(--surface-2); }
+.pass-toggle svg { width: 20px; height: 20px; }
+
+/* Medidor de fuerza de contraseña */
+.pass-meter { height: 5px; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: -8px; }
+.pass-meter span { display: block; height: 100%; width: 0; border-radius: inherit; transition: width .25s var(--ease), background .25s; }
+.pass-meter[data-level="0"] span { width: 12%; background: var(--danger); }
+.pass-meter[data-level="1"] span { width: 35%; background: #f97316; }
+.pass-meter[data-level="2"] span { width: 60%; background: #eab308; }
+.pass-meter[data-level="3"] span { width: 82%; background: var(--accent); }
+.pass-meter[data-level="4"] span { width: 100%; background: var(--accent-ink); }
+
+/* Seguridad en el panel de usuario */
+.up-security {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: 16px; padding: 12px 14px; border-radius: 12px;
+  background: var(--bg-2); border: 1px solid var(--border);
+}
+.up-security b { display: block; font-size: .88rem; }
+.up-security span { font-size: .8rem; color: var(--text-2); }
 .auth-form .field { margin: 0; }
 .auth-error {
   color: #dc2626; font-size: .85rem; font-weight: 600;

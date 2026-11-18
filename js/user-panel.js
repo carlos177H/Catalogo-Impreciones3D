@@ -14,7 +14,20 @@ App.userPanel = (() => {
 
   function render() {
     const perfil = App.auth.getPerfil();
-    if (!perfil) return;
+    if (!perfil) {
+      $("#userPanelInner").innerHTML = `
+        <div class="up-empty">
+          <div class="big">⚠️</div>
+          <p><b>No pudimos cargar tu perfil</b></p>
+          <p>Recarga la página. Si sigue pasando, contáctanos por WhatsApp.</p>
+        </div>
+        <div class="up-footer"><button class="btn btn-ghost btn-block" id="logoutBtn">Cerrar sesión</button></div>`;
+      $("#logoutBtn").addEventListener("click", async () => {
+        await App.auth.logout();
+        App.closeLayer($("#userPanel"));
+      });
+      return;
+    }
 
     $("#userPanelInner").innerHTML = `
       <div class="up-header">
@@ -69,34 +82,46 @@ App.userPanel = (() => {
           <span class="hint">${p.verificado ? "✅ Verificado" : "⚠️ No verificado"}</span>
         </div>
         <div class="field">
-          <label for="upTel">Teléfono</label>
-          <input id="upTel" type="tel" value="${esc(p.telefono || "")}" placeholder="Ej. 7721234567">
+          <label for="upTel">WhatsApp / Teléfono <span class="req">*</span></label>
+          <input id="upTel" type="tel" inputmode="numeric" maxlength="16" value="${esc(p.telefono || "")}" placeholder="10 dígitos, ej. 7721234567">
+          ${p.telefono ? "" : `<span class="field-note">Agrega tu teléfono para poder contactarte sobre tus pedidos.</span>`}
         </div>
         <div class="auth-error" id="perfilError" role="alert" style="display:none"></div>
         <button class="btn btn-primary btn-block" type="submit" id="perfilSubmit" style="height:44px">Guardar cambios</button>
       </form>
+      <div class="up-security">
+        <div>
+          <b>Contraseña</b>
+          <span>Cámbiala cuando quieras.</span>
+        </div>
+        <button type="button" class="btn btn-sm btn-ghost" id="upChangePass">Cambiar</button>
+      </div>
       <p class="up-since">Miembro desde ${new Date(p.fecha_registro).toLocaleDateString("es-MX", { year: "numeric", month: "long" })}</p>`;
+
+    $("#upChangePass").addEventListener("click", () => App.auth.openCambiarPassword());
 
     $("#perfilForm").addEventListener("submit", async e => {
       e.preventDefault();
+      const err = msg => {
+        $("#perfilError").textContent = msg;
+        $("#perfilError").style.display = msg ? "" : "none";
+      };
+      err("");
+      const nombre = $("#upNombre").value.trim().replace(/\s+/g, " ");
+      const tel = App.auth.normalizarTelefono($("#upTel").value);
+      if (nombre.length < 3) return err("Escribe tu nombre completo.");
+      if (!App.auth.telefonoValido(tel)) return err("El teléfono debe tener 10 dígitos.");
+
       const btn = $("#perfilSubmit");
       btn.disabled = true;
       btn.textContent = "Guardando…";
-
-      const res = await App.auth.actualizarPerfil({
-        nombre_completo: $("#upNombre").value.trim(),
-        telefono: $("#upTel").value.trim() || null
-      });
-
+      const res = await App.auth.actualizarPerfil({ nombre_completo: nombre, telefono: tel });
       btn.disabled = false;
       btn.textContent = "Guardar cambios";
 
-      if (res.error) {
-        $("#perfilError").textContent = res.error.message;
-        $("#perfilError").style.display = "";
-      } else {
-        App.toast("✅ Perfil actualizado");
-      }
+      if (res.error) return err(App.auth.traducirError(res.error));
+      App.toast("✅ Perfil actualizado");
+      render();
     });
   }
 
