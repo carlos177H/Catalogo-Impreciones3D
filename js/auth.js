@@ -73,6 +73,12 @@ App.auth = (() => {
     const { data: { session } } = await sb.auth.getSession();
     await aplicarSesion(session);
     procesarEnlaceDeCorreo();
+    try {
+      if (sessionStorage.getItem("3dps_logout_ok")) {
+        sessionStorage.removeItem("3dps_logout_ok");
+        setTimeout(() => App.toast("👋 Sesión cerrada"), 300);
+      }
+    } catch (_) {}
   }
 
   // Evita procesar dos veces la misma sesión (evento inicial + getSession)
@@ -189,14 +195,37 @@ App.auth = (() => {
     return { ok: true, user: data.user };
   }
 
+  /* Borra la sesión guardada en este dispositivo pase lo que pase.
+     (El SDK NO la borra si la llamada al servidor falla: por eso la sesión
+     "regresaba" al volver a abrir la app.) */
+  function borrarSesionLocal() {
+    try {
+      Object.keys(localStorage)
+        .filter(k => /^sb-.+-auth-token/.test(k))
+        .forEach(k => localStorage.removeItem(k));
+    } catch (_) {}
+  }
+
   async function logout() {
     const sb = window.supabaseClient;
-    if (!sb) return;
-    await sb.auth.signOut();
+    if (sb) {
+      try {
+        const { error } = await sb.auth.signOut();             // cierra en el servidor
+        if (error) console.warn("[Auth] signOut:", error.message);
+      } catch (e) { console.warn("[Auth] signOut:", e); }
+    }
+    borrarSesionLocal();
+    // Datos personales que no deben quedar en el equipo
+    App.store.set("3dps_cart", []);
+    App.store.set("3dps_form", null);
     user = null;
     perfil = null;
+    ultimoId = null;
     updateUI();
     notify();
+    // Recargar para empezar limpio (sin nada de la sesión anterior en memoria)
+    try { sessionStorage.setItem("3dps_logout_ok", "1"); } catch (_) {}
+    location.replace(location.pathname + location.search);
   }
 
   /* ---------- Contraseña ---------- */

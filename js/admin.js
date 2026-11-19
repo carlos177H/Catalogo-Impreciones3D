@@ -210,9 +210,14 @@
   }
 
   async function salir() {
-    await sb.auth.signOut();
+    try { await sb.auth.signOut(); } catch (_) {}
+    // El SDK no borra la sesión si falla el servidor: borrarla siempre
+    try {
+      Object.keys(localStorage).filter(k => /^sb-.+-auth-token/.test(k)).forEach(k => localStorage.removeItem(k));
+    } catch (_) {}
+    clearInterval(refrescoT);
     state.pedidos = []; state.clientes = [];
-    pantallaLogin();
+    location.replace(location.pathname);
   }
 
   /* =========================================================
