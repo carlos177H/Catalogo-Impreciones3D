@@ -15,13 +15,13 @@ self.addEventListener("push", e => {
     badge: base + "img/logo-icon.png",
     tag: d.tag || "aviso",
     renotify: true,
-    data: { url: d.url || base + "index2.html" }
-  }));
+    data: { url: d.url || base + "index.html" }
+  })));
 });
 
 self.addEventListener("notificationclick", e => {
   e.notification.close();
-  const url = new URL(e.notification.data?.url || "index2.html", self.registration.scope).href;
+  const url = new URL(e.notification.data?.url || "index.html", self.registration.scope).href;
   e.waitUntil((async () => {
     const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     const w = wins.find(c => c.url.split("#")[0] === url.split("#")[0]);
