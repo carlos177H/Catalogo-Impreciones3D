@@ -16,7 +16,7 @@ self.addEventListener("push", e => {
     tag: d.tag || "aviso",
     renotify: true,
     data: { url: d.url || base + "index.html" }
-  })));
+  }));
 });
 
 self.addEventListener("notificationclick", e => {

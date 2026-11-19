@@ -8,7 +8,7 @@
 INSERT INTO public.configuracion (clave, valor, descripcion) VALUES
   ('mantenimiento',     'false', 'true = la tienda muestra pantalla de mantenimiento'),
   ('mantenimiento_msg', '',      'Mensaje que ven los clientes durante el mantenimiento'),
-  ('url_tienda',        'https://carlos177h.github.io/Catalogo-Impreciones3D/index2.html',
+  ('url_tienda',        'https://carlos177h.github.io/Catalogo-Impreciones3D/index.html',
                         'Dirección de la tienda (para los enlaces de productos en WhatsApp)')
 ON CONFLICT (clave) DO NOTHING;
 

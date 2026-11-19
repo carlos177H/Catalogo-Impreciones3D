@@ -149,7 +149,7 @@ DECLARE
   v_url    text := (SELECT valor FROM privado.secretos WHERE clave = 'push_function_url');
   v_secret text := (SELECT valor FROM privado.secretos WHERE clave = 'push_secret');
   v_tienda text := coalesce((SELECT valor FROM public.configuracion WHERE clave = 'url_tienda'),
-                            'https://carlos177h.github.io/Catalogo-Impreciones3D/index2.html');
+                            'https://carlos177h.github.io/Catalogo-Impreciones3D/index.html');
   v_tit    text;
   v_txt    text;
   v_tipo   text;

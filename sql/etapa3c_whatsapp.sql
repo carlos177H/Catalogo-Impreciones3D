@@ -70,7 +70,7 @@ DECLARE
   v_n    integer;
   fmt    text := 'FM999,999,990.00';
   v_url  text := coalesce((SELECT valor FROM public.configuracion WHERE clave = 'url_tienda'),
-                          'https://carlos177h.github.io/Catalogo-Impreciones3D/index2.html');
+                          'https://carlos177h.github.io/Catalogo-Impreciones3D/index.html');
 BEGIN
   SELECT * INTO p FROM public.pedidos WHERE id_pedido = new.id_pedido;
   IF NOT FOUND THEN RETURN new; END IF;

@@ -58,7 +58,7 @@
     return d.toLocaleDateString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   }
   // Enlace a la ficha del producto en la tienda (misma carpeta que admin.html)
-  const urlProducto = sku => new URL("index2.html#p=" + encodeURIComponent(sku || ""), location.href).href;
+  const urlProducto = sku => new URL("index.html#p=" + encodeURIComponent(sku || ""), location.href).href;
   const tel10 = t => String(t || "").replace(/\D/g, "").slice(-10);
   const waCliente = (tel, txt) => `https://wa.me/52${tel10(tel)}?text=${encodeURIComponent(txt)}`;
 
@@ -451,8 +451,8 @@
     if (/^3DC-\d+$/i.test(v)) return "#p=" + v.toUpperCase();
     return v;
   }
-  const enlaceAbsoluto = u => !u ? new URL("index2.html", location.href).href
-    : u.startsWith("#") ? new URL("index2.html" + u, location.href).href : u;
+  const enlaceAbsoluto = u => !u ? new URL("index.html", location.href).href
+    : u.startsWith("#") ? new URL("index.html" + u, location.href).href : u;
 
   function renderAvisos() {
     const a = state.avisos || {};
