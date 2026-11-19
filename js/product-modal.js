@@ -16,6 +16,7 @@ App.productModal = (() => {
     $("#pmSku").textContent = "ID: " + App.skuOf(p);
     setHash("#p=" + encodeURIComponent(App.skuOf(p)));
     $("#pmDesc").textContent = p.descripcionDetallada;
+    refreshFav();
 
     const many = p.imagenes.length > 1;
     $("#stageTrack").innerHTML = p.imagenes.map((src, k) =>
@@ -132,6 +133,41 @@ App.productModal = (() => {
       App.closeLayer(modal());
       App.toast(`✅ ${state.qty} × ${state.p.nombre} agregado`);
     });
+
+    // Favorito: requiere sesión
+    $("#pmFav").addEventListener("click", async () => {
+      if (!App.auth?.isLoggedIn()) {
+        App.toast("Inicia sesión para guardar favoritos");
+        return App.auth?.openLogin();
+      }
+      const btn = $("#pmFav");
+      const add = !btn.classList.contains("active");
+      btn.disabled = true;
+      setFav(add); // respuesta inmediata
+      const ok = await App.userPanel.toggleFavorito(state.p.id, add);
+      if (!ok) setFav(!add);
+      btn.disabled = false;
+    });
+  }
+
+  function setFav(on) {
+    const btn = $("#pmFav");
+    btn.classList.toggle("active", on);
+    btn.classList.remove("pop"); void btn.offsetWidth; if (on) btn.classList.add("pop");
+    btn.setAttribute("aria-pressed", on);
+    btn.setAttribute("aria-label", on ? "Quitar de favoritos" : "Agregar a favoritos");
+    btn.title = btn.getAttribute("aria-label");
+  }
+
+  async function refreshFav() {
+    const btn = $("#pmFav");
+    if (!btn) return;
+    btn.classList.remove("active", "pop");
+    btn.setAttribute("aria-pressed", "false");
+    if (!App.auth?.getPerfil()) return;
+    const id = state.p.id;
+    const on = await App.userPanel.esFavorito(id);
+    if (state.p.id === id) { btn.classList.toggle("active", on); btn.setAttribute("aria-pressed", on); }
   }
 
   return { init, open };

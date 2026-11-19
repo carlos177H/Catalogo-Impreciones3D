@@ -20,14 +20,21 @@ App.catalog = (() => {
     const out = [], seen = new Set();
     const push = p => { if (p && !seen.has(p.id)) { seen.add(p.id); out.push(p); } };
     const claves = (cfg.temporada || {})[new Date().getMonth() + 1] || [];
+    const solo = cfg.soloTemporada && claves.length;
     if (claves.length) {
       const re = new RegExp(claves.map(k => App.norm(k)).join("|"));
-      App.productos().filter(p => re.test(App.norm(p.nombre + " " + (p.etiquetas || []).join(" "))))
-        .slice(0, cfg.maxTemporada || 6).forEach(push);
+      const ex = (cfg.excluir || []).length ? new RegExp(cfg.excluir.map(k => App.norm(k)).join("|")) : null;
+      App.productos()
+        .filter(p => { const t = App.norm(p.nombre + " " + (p.etiquetas || []).join(" ")); return re.test(t) && !(ex && ex.test(t)); })
+        .slice(0, solo ? (cfg.max || 16) : (cfg.maxTemporada || 6)).forEach(push);
     }
-    (cfg.manual || []).forEach(sku => push(App.bySku(sku)));
+    if (!solo) (cfg.manual || []).forEach(sku => push(App.bySku(sku)));
     return out.slice(0, cfg.max || 16);
   }
+  const tendenciasDeTemporada = () => {
+    const cfg = CONFIG.tendencias || {};
+    return !!(cfg.soloTemporada && (cfg.temporada || {})[new Date().getMonth() + 1]?.length);
+  };
 
   /* ---------- Pestañas ---------- */
   function renderTabs() {
@@ -69,7 +76,10 @@ App.catalog = (() => {
   function renderHome() {
     $("#resultInfo").textContent = "";
     const all = App.productos();
-    let html = rowHTML("🔥 Lo que está de moda", tendencias(), { sub: "Lo más pedido y lo de temporada.", badge: "Tendencia" });
+    const cfgT = CONFIG.tendencias || {};
+    let html = tendenciasDeTemporada()
+      ? rowHTML(esc(cfgT.titulo || "🔥 Lo que está de moda"), tendencias(), { sub: esc(cfgT.subtitulo || ""), badge: "Temporada" })
+      : rowHTML("🔥 Lo que está de moda", tendencias(), { sub: "Lo más pedido y lo de temporada.", badge: "Tendencia" });
     html += quoteHTML(false);
     categorias().forEach(c => {
       const list = all.filter(p => p.categoria === c);
@@ -137,7 +147,7 @@ App.catalog = (() => {
       <article class="card" data-open="${p.id}" style="animation-delay:${Math.min(i, 10) * 40}ms">
         <div class="card-media">
           <img src="${App.img(p.imagenes[0], 600)}" alt="${esc(p.nombre)}" ${App.IMG_ATTR}>
-          ${badge ? `<span class="badge-trend">🔥 ${esc(badge)}</span>` : ""}
+          ${badge ? `<span class="badge-trend">${badge === "Temporada" ? "🎄" : "🔥"} ${esc(badge)}</span>` : ""}
           ${App.maxDiscount(p) > 0 ? `<span class="badge-disc"><span class="long">Hasta </span>−${App.pct(App.maxDiscount(p))}%<span class="long"> mayoreo</span></span>` : ""}
         </div>
         <div class="card-body">
@@ -160,10 +170,13 @@ App.catalog = (() => {
     if (state.cat === INICIO && !state.q.trim()) renderHome(); else renderGrid();
   }
 
+  // Inicio de la lista (justo debajo del hero)
+  const inicioLista = () => Math.max(0, $(".hero").offsetTop + $(".hero").offsetHeight - 10);
+
   function goTo(cat) {
     state.cat = cat;
     render();
-    window.scrollTo({ top: Math.max(0, $(".hero").offsetTop + $(".hero").offsetHeight - 10), behavior: "smooth" });
+    window.scrollTo({ top: inicioLista(), behavior: "smooth" });
     $(`.tab[data-cat="${CSS.escape(cat)}"]`)?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }
 
@@ -173,6 +186,8 @@ App.catalog = (() => {
       if (!t) return;
       state.cat = t.dataset.cat;
       render();
+      // Si ya bajaste en la lista, regresar al inicio de la nueva categoría
+      if (window.scrollY > inicioLista()) window.scrollTo({ top: inicioLista(), behavior: "instant" });
       $(`.tab[data-cat="${CSS.escape(state.cat)}"]`)?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
     });
 

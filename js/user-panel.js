@@ -3,13 +3,29 @@
    ========================================================= */
 App.userPanel = (() => {
   const { $, $$, esc, fmt } = App;
-  const TABS = ["perfil", "favoritos", "pedidos"];
+  const svg = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const ICON = {
+    perfil: svg('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
+    favoritos: svg('<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>'),
+    pedidos: svg('<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/>'),
+    logout: svg('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>'),
+    check: svg('<path d="M20 6 9 17l-5-5"/>'),
+    alert: svg('<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>'),
+    trash: svg('<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>'),
+    lock: svg('<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>')
+  };
+  const TABS = [
+    { id: "perfil", label: "Perfil" },
+    { id: "favoritos", label: "Favoritos" },
+    { id: "pedidos", label: "Pedidos" }
+  ];
   let activeTab = "perfil";
 
   function open(tab) {
     activeTab = tab || "perfil";
     render();
-    App.openLayer($("#userPanel"));
+    const el = $("#userPanel");
+    if (!el.classList.contains("open")) App.openLayer(el);
   }
 
   function render() {
@@ -31,22 +47,19 @@ App.userPanel = (() => {
 
     $("#userPanelInner").innerHTML = `
       <div class="up-header">
-        <div class="up-avatar">${perfil.nombre_completo.charAt(0).toUpperCase()}</div>
-        <div>
+        <div class="up-avatar">${esc(perfil.nombre_completo.charAt(0).toUpperCase())}</div>
+        <div class="up-header-info">
           <h2 class="up-name">${esc(perfil.nombre_completo)}</h2>
           <p class="up-email">${esc(perfil.email)}</p>
+          <span class="up-badge ${perfil.verificado ? "ok" : "warn"}">${perfil.verificado ? ICON.check + "Cuenta verificada" : ICON.alert + "Correo sin verificar"}</span>
         </div>
       </div>
-      <nav class="up-tabs">
-        ${TABS.map(t => `<button class="up-tab ${t === activeTab ? "active" : ""}" data-uptab="${t}">${
-          t === "perfil" ? "👤 Mi perfil" :
-          t === "favoritos" ? "❤️ Favoritos" :
-          "📦 Mis pedidos"
-        }</button>`).join("")}
+      <nav class="up-tabs" role="tablist">
+        ${TABS.map(t => `<button class="up-tab ${t.id === activeTab ? "active" : ""}" role="tab" aria-selected="${t.id === activeTab}" data-uptab="${t.id}">${ICON[t.id]}<span>${t.label}</span></button>`).join("")}
       </nav>
       <div class="up-content" id="upContent"></div>
       <div class="up-footer">
-        <button class="btn btn-ghost btn-block" id="logoutBtn">Cerrar sesión</button>
+        <button class="btn btn-ghost btn-block up-logout" id="logoutBtn">${ICON.logout}Cerrar sesión</button>
       </div>`;
 
     // Tabs
@@ -79,7 +92,6 @@ App.userPanel = (() => {
         <div class="field">
           <label for="upEmail">Correo electrónico</label>
           <input id="upEmail" type="email" value="${esc(p.email)}" disabled>
-          <span class="hint">${p.verificado ? "✅ Verificado" : "⚠️ No verificado"}</span>
         </div>
         <div class="field">
           <label for="upTel">WhatsApp / Teléfono <span class="req">*</span></label>
@@ -90,6 +102,7 @@ App.userPanel = (() => {
         <button class="btn btn-primary btn-block" type="submit" id="perfilSubmit" style="height:44px">Guardar cambios</button>
       </form>
       <div class="up-security">
+        <span class="up-security-ico">${ICON.lock}</span>
         <div>
           <b>Contraseña</b>
           <span>Cámbiala cuando quieras.</span>
@@ -167,7 +180,7 @@ App.userPanel = (() => {
             </div>
             <div class="up-fav-actions">
               <button class="btn btn-sm btn-primary" data-fav-open="${p.id}">Ver</button>
-              <button class="btn btn-sm btn-ghost" data-fav-remove="${p.id}" title="Quitar de favoritos">🗑️</button>
+              <button class="btn btn-sm btn-ghost" data-fav-remove="${p.id}" title="Quitar de favoritos" aria-label="Quitar de favoritos">${ICON.trash}</button>
             </div>
           </div>`).join("")}
       </div>`;
@@ -230,89 +243,50 @@ App.userPanel = (() => {
 
   /* ---------- Pedidos ---------- */
   async function renderPedidos() {
-    const sb = window.supabaseClient;
-    const perfil = App.auth.getPerfil();
-    if (!sb || !perfil) return;
-
+    if (!App.pedidos) return;
     $("#upContent").innerHTML = `<div class="up-loading">Cargando pedidos…</div>`;
 
-    const { data: pedidos, error } = await sb
-      .from("pedidos")
-      .select(`
-        id_pedido, fecha_pedido, total, notas,
-        estatus_pedido ( nombre )
-      `)
-      .eq("id_usuario", perfil.id_usuario)
-      .order("fecha_pedido", { ascending: false });
-
-    if (error) {
-      $("#upContent").innerHTML = `<p class="up-empty">Error al cargar pedidos.</p>`;
+    let pedidos;
+    try { pedidos = await App.pedidos.listar(); }
+    catch (e) {
+      $("#upContent").innerHTML = `<p class="up-empty">${esc(e.message)}</p>`;
       return;
     }
+    if (activeTab !== "pedidos") return; // cambió de pestaña mientras cargaba
 
-    if (!pedidos || pedidos.length === 0) {
+    if (!pedidos.length) {
       $("#upContent").innerHTML = `
         <div class="up-empty">
           <div class="big">📦</div>
           <p><b>Sin pedidos aún</b></p>
-          <p>Cuando hagas tu primer pedido, aparecerá aquí.</p>
+          <p>Cuando hagas tu primer pedido, aquí verás cada paso: pago, impresión y entrega.</p>
         </div>`;
       return;
     }
 
-    $("#upContent").innerHTML = `
-      <div class="up-orders">
-        ${pedidos.map(p => {
-          const fecha = new Date(p.fecha_pedido).toLocaleDateString("es-MX", {
-            day: "numeric", month: "short", year: "numeric"
-          });
-          const estatus = p.estatus_pedido?.nombre || "Pendiente";
-          const statusClass = estatus.toLowerCase().includes("entreg") ? "done" :
-                              estatus.toLowerCase().includes("cancel") ? "cancel" : "";
-          return `
-            <div class="up-order" data-order="${p.id_pedido}">
-              <div class="up-order-head">
-                <div>
-                  <span class="up-order-id">#${p.id_pedido}</span>
-                  <span class="up-order-date">${fecha}</span>
-                </div>
-                <span class="up-order-status ${statusClass}">${esc(estatus)}</span>
-              </div>
-              <div class="up-order-total">${fmt(parseFloat(p.total))}</div>
-              ${p.notas ? `<div class="up-order-notes">${esc(p.notas)}</div>` : ""}
-              <button class="btn btn-sm btn-ghost" data-order-detail="${p.id_pedido}">Ver detalle</button>
-            </div>`;
-        }).join("")}
-      </div>`;
+    $("#upContent").innerHTML = `<div class="ped-list">${pedidos.map(App.pedidos.tarjeta).join("")}</div>`;
+    App.notif?.sincronizarPedidos?.(pedidos);
 
-    $$("[data-order-detail]", $("#upContent")).forEach(b =>
-      b.addEventListener("click", () => renderDetalleOrden(+b.dataset.orderDetail))
+    $("#upContent").querySelectorAll("[data-subir-comp]").forEach(b =>
+      b.addEventListener("click", () => {
+        const id = +b.dataset.subirComp;
+        const ped = pedidos.find(p => p.id_pedido === id);
+        App.pedidos.abrirSubida(id, ped ? parseFloat(ped.anticipo) : null, () => renderPedidos(),
+          ped && App.pedidos.tipoPago(ped) === "anticipo");
+      })
     );
-  }
-
-  async function renderDetalleOrden(idPedido) {
-    const sb = window.supabaseClient;
-    const { data: detalles, error } = await sb
-      .from("detalle_pedido")
-      .select("*")
-      .eq("id_pedido", idPedido);
-
-    if (error || !detalles) return App.toast("Error al cargar detalle");
-
-    const items = detalles.map(d => {
-      const p = App.byId(d.id_producto);
-      return `<div class="up-detail-item">
-        <span>${d.cantidad} × ${p ? esc(p.nombre) : `Producto #${d.id_producto}`}</span>
-        <span>${fmt(parseFloat(d.subtotal))}</span>
-      </div>`;
-    }).join("");
-
-    // Insert detail below the order
-    const orderEl = $(`[data-order="${idPedido}"]`);
-    const existing = orderEl.querySelector(".up-detail");
-    if (existing) { existing.remove(); return; }
-
-    orderEl.insertAdjacentHTML("beforeend", `<div class="up-detail">${items}</div>`);
+    $("#upContent").querySelectorAll("[data-ver-prod]").forEach(b =>
+      b.addEventListener("click", () => App.productModal.open(+b.dataset.verProd))
+    );
+    $("#upContent").querySelectorAll("[data-ver-comp]").forEach(b =>
+      b.addEventListener("click", async () => {
+        const w = window.open("", "_blank");
+        try {
+          const url = await App.pedidos.urlComprobante(b.dataset.verComp);
+          if (w) w.location = url; else location.href = url;
+        } catch (e) { w?.close(); App.toast(e.message); }
+      })
+    );
   }
 
   return { open, render, toggleFavorito, esFavorito };

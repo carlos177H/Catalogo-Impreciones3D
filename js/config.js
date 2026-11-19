@@ -4,6 +4,9 @@
 window.CONFIG = {
   negocio: "3D JCGA",
 
+  // Versión de la app (historial en versiones.html)
+  version: "2.0.0",
+
   // 52 = México + número a 10 dígitos (sin espacios ni +)
   whatsapp: "527721509872",
 
@@ -55,8 +58,14 @@ window.CONFIG = {
   //   temporada: palabras clave por mes (1 = enero … 12 = diciembre); toma hasta maxTemporada productos que coincidan.
   //   manual: SKUs que quieras destacar siempre (cámbialos cuando algo se ponga de moda).
   tendencias: {
-    max: 16,
+    max: 20,
     maxTemporada: 6,
+    // true = la sección muestra SOLO productos de temporada (ignora "manual")
+    soloTemporada: true,
+    titulo: "🎄 Especial de Navidad",
+    subtitulo: "Decoración, adornos y regalos para estas fiestas.",
+    // Palabras que nunca cuentan como temporada (falsos positivos)
+    excluir: ["giroscopo", "de nacimiento"],
     temporada: {
       1:  ["reyes", "rosca", "ano nuevo"],
       2:  ["san valent", "corazon", "amor"],
@@ -68,14 +77,42 @@ window.CONFIG = {
       8:  ["escolar", "regreso a clases", "lapiz"],
       9:  ["mexico", "patri", "independencia"],
       10: ["halloween", "muertos", "calavera", "calabaza", "fantasma"],
-      11: ["muertos", "calavera", "catrina", "navidad"],
-      12: ["navidad", "navideno", "reno", "nieve", "santa"]
+      11: ["navidad", "naviden", "\\brenos?\\b", "santa claus", "\\bnieve\\b", "grinch", "nacimiento", "belen", "trineo", "duende", "cascanueces", "baston de caramelo", "\\bcopos?\\b"],
+      12: ["navidad", "naviden", "\\brenos?\\b", "santa claus", "\\bnieve\\b", "grinch", "nacimiento", "belen", "trineo", "duende", "cascanueces", "baston de caramelo", "\\bcopos?\\b"]
     },
     manual: [
       "3DC-0878", "3DC-1477", "3DC-1360", "3DC-1343", "3DC-1246", "3DC-0316",
       "3DC-1309", "3DC-1308", "3DC-0112", "3DC-0301", "3DC-1307", "3DC-0393"
     ]
   },
+
+  // Anuncios de la campana 🔔 (el más reciente primero).
+  //   id: único y fijo (si lo cambias, se vuelve a marcar como "nuevo")
+  //   accion (opcional): { texto, buscar } busca en el catálogo · { texto, categoria } abre una categoría
+  //                      { texto, url } abre un enlace · { texto, registro: true } abre "Crear cuenta"
+  anuncios: [
+    {
+      id: "navidad-2026", fecha: "2026-11-18", icono: "🎄",
+      titulo: "¡Llegó la temporada navideña!",
+      texto: "Árboles, renos, nacimientos, esferas y adornos impresos a pedido.",
+      accion: { texto: "Ver productos navideños", buscar: "navidad" }
+    },
+    {
+      id: "cuentas-2026", fecha: "2026-11-18", icono: "✨",
+      titulo: "Ahora puedes crear tu cuenta",
+      texto: "Guarda tu carrito y tus favoritos en cualquier dispositivo.",
+      accion: { texto: "Crear mi cuenta", registro: true }
+    },
+    {
+      id: "cotiza-2026", fecha: "2026-11-01", icono: "📸",
+      titulo: "¿Tienes un diseño propio?",
+      texto: "Mándanos una foto o tu idea y te lo cotizamos sin compromiso.",
+      accion: { texto: "Cotizar mi diseño", cotizar: true }
+    }
+  ],
+
+  // Llave PÚBLICA para notificaciones push (la privada solo vive en Supabase → Edge Functions → Secrets)
+  vapidPublicKey: "BJTGWTOf_YVKL1Cs6IU5ASrKsi2RapPQxK9mEhFjJTZNStsgSyYFqmpl1s2cQKKAVfyFqFd4sCXFNhQmIHVttYc",
 
   // Descuentos por cantidad: false = desactivados (todos pagan precioBase).
   // Cuando quieras activarlos cambia a true; la escala de abajo ya está lista.

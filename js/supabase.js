@@ -13,6 +13,7 @@ window.supabaseClient = null;
 
 /* ---------- Inicializar cliente ---------- */
 function initSupabase() {
+  if (window.supabaseClient) return window.supabaseClient; // un solo cliente por página
   if (!window.supabase?.createClient) {
     console.warn("[Supabase] SDK no cargado, usando datos locales.");
     return null;
@@ -70,20 +71,24 @@ async function cargarProductosSupabase() {
   if (!client) return false;
 
   try {
-    // Supabase limita cada respuesta a 1000 filas por defecto.
+    // Supabase limita cada respuesta a 1000 filas: la primera página trae el
+    // total y las demás se piden TODAS A LA VEZ (antes era una tras otra).
     const pageSize = 1000;
-    const data = [];
-    for (let from = 0; ; from += pageSize) {
-      const { data: page, error } = await client
-        .from("v_productos_catalogo")
-        .select("*")
-        .order("id", { ascending: true })
-        .range(from, from + pageSize - 1);
+    const pagina = (from, conteo) => client
+      .from("v_productos_catalogo")
+      .select("*", conteo ? { count: "exact" } : undefined)
+      .order("id", { ascending: true })
+      .range(from, from + pageSize - 1);
 
-      if (error) throw error;
-      if (!page || page.length === 0) break;
-      data.push(...page);
-      if (page.length < pageSize) break;
+    const primera = await pagina(0, true);
+    if (primera.error) throw primera.error;
+    const data = [...(primera.data || [])];
+    const total = primera.count ?? data.length;
+    const resto = [];
+    for (let from = pageSize; from < total; from += pageSize) resto.push(pagina(from));
+    for (const r of await Promise.all(resto)) {
+      if (r.error) throw r.error;
+      data.push(...(r.data || []));
     }
 
     if (data.length === 0) {

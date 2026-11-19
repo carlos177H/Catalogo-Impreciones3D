@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Panel 3D JCGA</title>
+<link rel="icon" type="image/png" href="img/logo-icon.png">
+<link rel="stylesheet" href="css/styles.css?v=20261118m">
+<link rel="stylesheet" href="css/auth.css?v=20261118m">
+<link rel="stylesheet" href="css/admin.css?v=20261118m">
+</head>
+<body class="adm">
+
+<!-- Acceso -->
+<section class="adm-gate" id="gate" hidden>
+  <div class="adm-gate-box">
+    <img src="img/logo-icon.png" alt="" width="56" height="56" class="adm-gate-logo">
+    <div id="gateInner"></div>
+  </div>
+</section>
+
+<!-- Panel -->
+<div id="app" hidden>
+  <header class="adm-top">
+    <div class="adm-top-row">
+      <a class="brand" href="index2.html" title="Ir a la tienda">
+        <img class="brand-logo" src="img/logo-icon.png" alt="" width="36" height="36">
+        <span>Panel <b>3D JCGA</b></span>
+      </a>
+      <nav class="adm-tabs" role="tablist">
+        <button class="adm-tab active" data-view="pedidos" role="tab">Pedidos <span class="adm-badge" id="badgePend" hidden></span></button>
+        <button class="adm-tab" data-view="clientes" role="tab">Clientes</button>
+        <button class="adm-tab" data-view="avisos" role="tab">Avisos</button>
+        <button class="adm-tab" data-view="ajustes" role="tab">Ajustes</button>
+      </nav>
+      <div class="adm-actions">
+        <button class="adm-icon-btn" id="refreshBtn" title="Actualizar" aria-label="Actualizar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+        </button>
+        <button class="adm-icon-btn" id="logoutBtn" title="Cerrar sesión" aria-label="Cerrar sesión">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="adm-main">
+    <section id="view-pedidos">
+      <div class="adm-kpis" id="kpis"></div>
+      <div class="adm-toolbar">
+        <div class="search">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="buscar" type="search" placeholder="Buscar # pedido, cliente o teléfono…" autocomplete="off">
+        </div>
+      </div>
+      <div id="listaPedidos" class="adm-list"></div>
+    </section>
+
+    <section id="view-clientes" hidden>
+      <div class="adm-toolbar">
+        <div class="search">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="buscarCli" type="search" placeholder="Buscar cliente, correo o teléfono…" autocomplete="off">
+        </div>
+      </div>
+      <div id="listaClientes" class="adm-list"></div>
+    </section>
+
+    <section id="view-avisos" hidden>
+      <div class="adm-avisos">
+        <div class="adm-card">
+          <h2 class="adm-h2">Nuevo aviso</h2>
+          <p class="adm-muted">Aparece en la campana 🔔 de todos. Si activas “notificación”, también llega al celular o computadora de quienes aceptaron avisos, aunque tengan la app cerrada.</p>
+          <form id="avisoForm" class="auth-form" novalidate>
+            <div class="field">
+              <label>Ícono</label>
+              <div class="adm-iconos" id="avIconos"></div>
+            </div>
+            <div class="field">
+              <label for="avTitulo">Título <span class="req">*</span></label>
+              <input id="avTitulo" type="text" maxlength="80" placeholder="Ej. ¡Nuevos adornos navideños!" required>
+            </div>
+            <div class="field">
+              <label for="avTexto">Mensaje</label>
+              <textarea id="avTexto" rows="3" maxlength="300" placeholder="Ej. Llegaron 20 diseños nuevos de esferas y renos. Pide antes del 15 de diciembre."></textarea>
+            </div>
+            <div class="field">
+              <label for="avUrl">Enlace (opcional)</label>
+              <input id="avUrl" type="text" maxlength="300" placeholder="ID de producto (3DC-0123) o una dirección https://…">
+            </div>
+            <label class="adm-check"><input type="checkbox" id="avPush" checked> Enviar también como notificación <span class="adm-muted" id="avDisp"></span></label>
+            <div class="adm-preview" id="avPreview" aria-label="Vista previa"></div>
+            <button class="btn btn-primary" type="submit" id="avEnviar">Publicar aviso</button>
+          </form>
+        </div>
+        <div>
+          <h2 class="adm-h2">Avisos publicados</h2>
+          <div id="listaAvisos" class="adm-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-ajustes" hidden>
+      <div class="adm-card adm-settings adm-mant" id="mantCard">
+        <div class="adm-mant-row">
+          <div>
+            <h2>🛠️ Modo mantenimiento</h2>
+            <p class="adm-muted" id="mantEstado">—</p>
+          </div>
+          <label class="adm-switch adm-switch-lg">
+            <input type="checkbox" id="mantSwitch" aria-label="Activar modo mantenimiento">
+            <span class="adm-switch-ui" aria-hidden="true"></span>
+          </label>
+        </div>
+        <p class="adm-muted">Mientras esté activo, los clientes ven una pantalla de mantenimiento y no pueden comprar. Tú (admin con sesión iniciada en la tienda) sí puedes navegarla.</p>
+        <div class="field" style="margin-top:10px">
+          <label for="mantMsg">Mensaje para los clientes (opcional)</label>
+          <textarea id="mantMsg" rows="2" maxlength="300" placeholder="Estamos actualizando el catálogo. Volvemos pronto 🙌"></textarea>
+        </div>
+        <button class="btn btn-ghost btn-sm" type="button" id="mantMsgSave">Guardar mensaje</button>
+      </div>
+      <div class="adm-card adm-settings">
+        <h2>Anticipo en pedidos en efectivo</h2>
+        <p class="adm-muted">Las transferencias siempre se pagan completas por adelantado. Los clientes marcados como “de confianza” nunca pagan anticipo.</p>
+        <form id="ajustesForm" class="auth-form">
+          <div class="field">
+            <label for="cfgPct">Porcentaje de anticipo</label>
+            <input id="cfgPct" type="number" min="0" max="100" step="1" inputmode="numeric">
+          </div>
+          <div class="field">
+            <label for="cfgMin">Monto mínimo para pedir anticipo (MXN)</label>
+            <input id="cfgMin" type="number" min="0" step="1" inputmode="numeric">
+          </div>
+          <button class="btn btn-primary" type="submit" id="cfgSave">Guardar ajustes</button>
+        </form>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/supabase.min.js"></script>
+<script src="js/config.js?v=20261118m"></script>
+<script src="js/utils.js?v=20261118m"></script>
+<script src="js/supabase.js?v=20261118m"></script>
+<script src="js/admin.js?v=20261118m"></script>
+</body>
+</html>

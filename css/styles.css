@@ -275,7 +275,8 @@ footer{border-top:1px solid var(--line);padding:26px 0 100px;color:var(--ink-3);
   .wrap{padding:0 16px}
   .top-row{height:auto;flex-wrap:wrap;padding:12px 0;gap:10px}
   .search{order:3;max-width:none;flex-basis:100%}
-  .cart-btn-top{margin-left:auto;height:40px;padding:0 12px}
+  .top-actions{margin-left:auto}
+  .cart-btn-top{height:40px;padding:0 12px}
   .cart-btn-top .lbl{display:none}
   .tabs-wrap{top:118px}
   .hero{padding:26px 0 10px}

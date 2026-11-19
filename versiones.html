@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Novedades · 3D JCGA</title>
+<meta name="description" content="Historial de versiones del catálogo de impresiones 3D de 3D JCGA.">
+<link rel="icon" type="image/png" href="img/logo-icon.png">
+<link rel="stylesheet" href="css/styles.css?v=20261118m">
+<style>
+  body { background: var(--bg); }
+  .vh-wrap { max-width: 760px; margin: 0 auto; padding: 28px 16px 64px; }
+  .vh-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; }
+  .vh-top .brand img { width: 40px; height: 40px; border-radius: 10px; }
+  .vh-back { font-weight: 700; font-size: .9rem; color: var(--accent-ink); text-decoration: none; }
+  .vh-back:hover { text-decoration: underline; }
+  .vh-hero h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 800; letter-spacing: -.03em; }
+  .vh-hero p { color: var(--ink-2); margin-top: 6px; }
+  .vh-list { list-style: none; margin-top: 28px; position: relative; padding-left: 28px; }
+  .vh-list::before { content: ""; position: absolute; left: 9px; top: 8px; bottom: 8px; width: 2px; background: var(--line); }
+  .vh-item { position: relative; margin-bottom: 22px; }
+  .vh-item::before {
+    content: ""; position: absolute; left: -26px; top: 22px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--surface); border: 3px solid var(--line);
+  }
+  .vh-item.actual::before { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 5px var(--accent-softer); }
+  .vh-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow-sm); }
+  .vh-item.actual .vh-card { border-color: var(--accent-soft); box-shadow: var(--shadow); }
+  .vh-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 12px; }
+  .vh-ver { font-size: 1.25rem; font-weight: 800; letter-spacing: -.02em; }
+  .vh-tag { font-size: .7rem; font-weight: 800; padding: 3px 9px; border-radius: 99px; background: var(--accent-soft); color: var(--accent-ink); }
+  .vh-date { font-size: .82rem; color: var(--ink-3); margin-left: auto; }
+  .vh-card h3 { font-size: .98rem; margin-top: 4px; color: var(--ink-2); font-weight: 600; }
+  .vh-card ul { margin: 12px 0 0 18px; display: grid; gap: 6px; font-size: .92rem; line-height: 1.5; }
+  .vh-card li::marker { color: var(--accent); }
+  .vh-foot { text-align: center; color: var(--ink-3); font-size: .82rem; margin-top: 32px; }
+</style>
+</head>
+<body>
+<div class="vh-wrap">
+  <div class="vh-top">
+    <a class="brand" href="index2.html"><img src="img/logo-icon.png" alt="" width="40" height="40"><span>3D JCGA</span></a>
+    <a class="vh-back" href="index2.html">← Volver a la tienda</a>
+  </div>
+
+  <header class="vh-hero">
+    <h1>Novedades</h1>
+    <p>Así ha ido creciendo nuestra tienda de impresiones 3D.</p>
+  </header>
+
+  <ol class="vh-list">
+    <li class="vh-item actual">
+      <article class="vh-card">
+        <div class="vh-head"><span class="vh-ver">v2.0.0</span><span class="vh-tag">Versión actual</span><span class="vh-date">18 nov 2026</span></div>
+        <h3>Tu cuenta, tus pedidos y avisos en tiempo real</h3>
+        <ul>
+          <li><b>Cuentas de cliente:</b> registro con verificación de correo, recuperación y cambio de contraseña.</li>
+          <li><b>Carrito en la nube:</b> tus productos te siguen en cualquier dispositivo donde inicies sesión.</li>
+          <li><b>Pedidos dentro de la app:</b> confirma tu compra sin mandar mensajes y sigue cada paso: pago, impresión, listo y entregado.</li>
+          <li><b>Pagos claros:</b> transferencia o efectivo con anticipo, y sube tu comprobante desde la app.</li>
+          <li><b>Favoritos</b> y botón de <b>información por WhatsApp</b> en cada pedido.</li>
+          <li><b>Campana de avisos</b> y <b>notificaciones</b> aunque la app esté cerrada.</li>
+          <li><b>Especial de Navidad</b>, encabezado renovado y ver productos en grande desde el carrito.</li>
+          <li>Carga más rápida del catálogo.</li>
+        </ul>
+      </article>
+    </li>
+    <li class="vh-item">
+      <article class="vh-card">
+        <div class="vh-head"><span class="vh-ver">v1.1.0</span><span class="vh-date">14 nov 2026</span></div>
+        <h3>Catálogo conectado a base de datos</h3>
+        <ul>
+          <li>Más de 3,000 productos cargados desde nuestra base de datos.</li>
+          <li>Primeros pasos de inicio de sesión.</li>
+        </ul>
+      </article>
+    </li>
+    <li class="vh-item">
+      <article class="vh-card">
+        <div class="vh-head"><span class="vh-ver">v1.0.0</span><span class="vh-date">27 oct 2026</span></div>
+        <h3>Primer catálogo en línea</h3>
+        <ul>
+          <li>Catálogo por categorías con buscador y fichas de producto.</li>
+          <li>Carrito y pedidos por WhatsApp.</li>
+          <li>Cotización de diseños propios.</li>
+        </ul>
+      </article>
+    </li>
+  </ol>
+
+  <p class="vh-foot">© 3D JCGA · Pachuca, Hidalgo</p>
+</div>
+</body>
+</html>

@@ -10,6 +10,8 @@ App.checkout = (() => {
   const ICON_WA = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg>`;
 
   function open() {
+    // Con sesión: el pedido se registra en la app. Sin sesión: WhatsApp (como antes).
+    if (App.auth?.getPerfil() && App.pedidos) return openCuenta();
     const c = App.drawer.customer(), t = App.cart.totals();
     const b = CONFIG.banco;
     const clabeFmt = /^\d{18}$/.test(b.clabe) ? b.clabe.replace(/(\d{3})(\d{3})(\d{11})(\d{1})/, "$1 $2 $3 $4") : b.clabe.replace(/(\d{4})(?=\d)/g, "$1 ");
@@ -129,6 +131,137 @@ App.checkout = (() => {
     App.cart.clear();
     App.drawer.render();
     App.drawer.clearNotes();
+  }
+
+  /* ================= Compra con cuenta ================= */
+  function payOptsHTML() {
+    return `
+      <div class="section-t" style="margin-top:0">Método de pago</div>
+      <div class="pay-opts" role="radiogroup">
+        <label class="pay"><input type="radio" name="pay" value="efectivo" ${state.payment === "efectivo" ? "checked" : ""}>
+          <div><div class="t">Efectivo contra entrega</div><div class="s">Pagas al recibir tu pedido</div></div><span class="emo">💵</span></label>
+        <label class="pay"><input type="radio" name="pay" value="transferencia" ${state.payment === "transferencia" ? "checked" : ""}>
+          <div><div class="t">Transferencia bancaria</div><div class="s">Subes tu comprobante en la app</div></div><span class="emo">🏦</span></label>
+      </div>`;
+  }
+
+  function openCuenta() {
+    const c = App.drawer.customer(), t = App.cart.totals();
+    const perfil = App.auth.getPerfil();
+
+    $("#coInner").innerHTML = `
+      <h2 id="coTitle">Confirmar pedido</h2>
+      <p class="co-sub">Para <b>${esc(perfil.nombre_completo)}</b> · ${esc(c.loc)}</p>
+      <div class="summary">
+        ${App.cart.lines().map(l => `<div class="row"><span>${l.qty} × ${esc(l.p.nombre)}</span><span>${fmt(l.subtotal)}</span></div>`).join("")}
+        <div class="row total"><span>Total estimado</span><span>${fmt(t.total)}</span></div>
+      </div>
+      <p class="ref-note" style="margin:-8px 0 16px">Precios de referencia. Si algo cambia (tamaño, colores o personalización) te avisamos antes de imprimir.</p>
+      ${payOptsHTML()}
+      <div id="payPlan"></div>
+      <div class="auth-error" id="coError" role="alert"></div>
+      <div class="co-actions">
+        <button class="btn btn-primary btn-block" id="confirmOrder" style="height:52px;font-size:.98rem">Confirmar pedido</button>
+        <button class="btn btn-ghost btn-block" data-back>← Volver al carrito</button>
+      </div>
+      <p class="co-foot-note">Podrás ver el estatus de tu pedido en <b>Mi cuenta → Pedidos</b>.</p>`;
+
+    $$('input[name="pay"]', $("#coInner")).forEach(r => r.addEventListener("change", e => {
+      state.payment = e.target.value;
+      renderPlan(t.total);
+    }));
+    renderPlan(t.total);
+    $("[data-back]", $("#coInner")).addEventListener("click", () => App.closeLayer(modal()));
+    $("#confirmOrder").addEventListener("click", confirmarCuenta);
+
+    App.openLayer(modal());
+    $("#checkoutModal .modal-box").scrollTop = 0;
+  }
+
+  /* Cómo se paga: total por adelantado, anticipo + resto, o todo al recibir */
+  async function renderPlan(total) {
+    const metodo = state.payment;
+    const ant = await App.pedidos.anticipoEstimado(total, metodo);
+    if (state.payment !== metodo || !$("#payPlan")) return;
+    const tip = `<div class="receipt-tip"><span class="i">📸</span><span>Al confirmar te mostramos la cuenta y podrás <b>subir la captura de tu transferencia aquí mismo</b>, ahora o después desde “Mis pedidos”.</span></div>`;
+    let html;
+    if (metodo === "transferencia") {
+      html = `<div class="pay-plan">
+          <div class="pp-row now"><span>🏦 Transfieres ahora</span><b>${fmt(total)}</b></div>
+        </div>${tip}`;
+    } else if (ant > 0) {
+      html = `<div class="pay-plan">
+          <div class="pp-row now"><span>🏦 Anticipo 50% por transferencia</span><b>${fmt(ant)}</b></div>
+          <div class="pp-row"><span>💵 Resto en efectivo al entregar</span><b>${fmt(total - ant)}</b></div>
+        </div>${tip}`;
+    } else {
+      html = `<div class="pay-plan">
+          <div class="pp-row"><span>💵 Pagas en efectivo al recibir</span><b>${fmt(total)}</b></div>
+        </div>`;
+    }
+    $("#payPlan").innerHTML = html;
+  }
+
+  async function confirmarCuenta() {
+    const btn = $("#confirmOrder"), err = $("#coError");
+    const c = App.drawer.customer();
+    err.textContent = "";
+    btn.disabled = true; btn.textContent = "Enviando pedido…";
+    try {
+      const res = await App.pedidos.crear({ lugar: c.loc, notas: c.notes, metodo: state.payment });
+      App.cart.items = [];
+      App.store.set("3dps_cart", []);
+      App.drawer.render();
+      App.drawer.clearNotes();
+      exitoCuenta(res);
+    } catch (e) {
+      err.textContent = e.message;
+      btn.disabled = false; btn.textContent = "Confirmar pedido";
+    }
+  }
+
+  function exitoCuenta({ id_pedido, total, anticipo }) {
+    total = parseFloat(total); anticipo = parseFloat(anticipo) || 0;
+    const transfer = anticipo > 0;               // hay que transferir algo ahora
+    const esAnticipo = transfer && state.payment === "efectivo";
+    const b = CONFIG.banco;
+    const aviso = App.pedidos.waInfo(id_pedido, "lo acabo de hacer en la app");
+
+    $("#coInner").innerHTML = `
+      <div class="success">
+        <div class="ok-anim" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M15 27l7 7 15-15"/></svg></div>
+        <h2 id="coTitle" style="padding:0">¡Pedido #${id_pedido} recibido!</h2>
+        <p>Total: <b>${fmt(total)}</b>. Ya lo tenemos registrado y te avisaremos cada avance.</p>
+        ${esAnticipo ? `<p class="ok-ant">Para empezar a imprimir, transfiere el <b>anticipo de ${fmt(anticipo)}</b>. El resto (${fmt(total - anticipo)}) lo pagas en efectivo al recibir.</p>` : ""}
+        ${transfer ? `
+          <div class="bank show" style="text-align:left;margin-top:14px">
+            <div class="bank-row"><span>Banco</span><b>${esc(b.nombre)}</b></div>
+            <div class="bank-row"><span>CLABE</span>
+              <div class="clabe-wrap"><b class="clabe">${esc(b.clabe)}</b>
+              <button class="copy-btn" id="copyClabe" type="button">${ICON_COPY}<span>Copiar</span></button></div></div>
+            <div class="bank-row"><span>Titular</span><b>${esc(b.titular)}</b></div>
+            <div class="bank-row"><span>${esAnticipo ? "Anticipo" : "Monto"}</span><b>${fmt(anticipo)}</b></div>
+          </div>` : `<p style="margin-top:10px;font-size:.9rem">Pagas en efectivo al recibirlo. El lugar exacto, día y hora los acordamos contigo.</p>`}
+        <div class="co-actions">
+          ${transfer ? `<button class="btn btn-primary btn-block" id="goUpload" style="height:50px">${App.pedidos.ICO.subir} Subir comprobante ahora</button>` : ""}
+          <button class="btn ${transfer ? "btn-ghost" : "btn-primary"} btn-block" id="goOrders">Ver mis pedidos</button>
+          ${App.notif?.puedePedirPush() ? `<button class="btn btn-ghost btn-block co-push" id="goPush">🔔 Avísame cuando cambie mi pedido</button>` : ""}
+          <a class="btn btn-wa-soft btn-block ped-wa" href="${aviso}" target="_blank" rel="noopener">${App.pedidos.ICO.wa} Información por WhatsApp</a>
+          <p class="co-foot-note">Ya recibimos tu pedido. Sigue su estatus aquí en la app o escríbenos cuando quieras.</p>
+        </div>
+      </div>`;
+
+    $("#copyClabe")?.addEventListener("click", copyClabe);
+    $("#goPush")?.addEventListener("click", async e => {
+      const ok = await App.notif.activarPush();
+      if (ok) e.target.remove();
+    });
+    $("#goUpload")?.addEventListener("click", () =>
+      App.pedidos.abrirSubida(id_pedido, anticipo, () => App.userPanel.open("pedidos"), esAnticipo));
+    $("#goOrders").addEventListener("click", () => {
+      App.closeLayer(modal()); App.closeLayer($("#drawer"));
+      App.userPanel.open("pedidos");
+    });
   }
 
   return { open, buildMessage };
