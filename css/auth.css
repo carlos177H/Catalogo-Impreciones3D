@@ -508,3 +508,35 @@ button.ci-name:hover { color: var(--accent-ink); text-decoration: underline; }
   .invite { left: 16px; right: 16px; bottom: 88px; width: auto; } /* encima del carrito flotante */
 }
 @media (prefers-reduced-motion: reduce) { .invite-ico { animation: none; } }
+
+/* ---------- Compartir producto ---------- */
+.share-pill {
+  position: absolute; left: 12px; top: 12px; z-index: 3;
+  display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px 0 11px;
+  border: none; border-radius: 999px; cursor: pointer; font: inherit; font-size: .82rem; font-weight: 700;
+  background: rgba(255,255,255,.92); color: var(--ink); box-shadow: 0 4px 14px -4px rgba(16,32,29,.35);
+  backdrop-filter: blur(6px); transition: transform .2s var(--ease), background .2s;
+  animation: share-in .5s var(--ease) .4s both;
+}
+.share-pill svg { width: 16px; height: 16px; color: var(--accent-ink); }
+.share-pill:hover { transform: translateY(-1px) scale(1.03); background: #fff; }
+@keyframes share-in { from { opacity: 0; transform: translateY(-6px); } }
+.share-btn svg { width: 20px; height: 20px; }
+.share-btn:hover { background: var(--accent-softer); border-color: var(--accent); color: var(--accent-ink); }
+
+.share-menu {
+  margin-top: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 16px;
+  background: var(--surface); box-shadow: var(--shadow); animation: up-fade .2s var(--ease);
+}
+.share-menu[hidden] { display: none; }
+.share-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: .9rem; }
+.share-close { width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--surface-2); cursor: pointer; font-size: 1.1rem; line-height: 1; }
+.share-opts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.share-opt {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink); text-decoration: none; cursor: pointer;
+  font: inherit; font-size: .74rem; font-weight: 700; transition: border-color .2s, background .2s;
+}
+.share-opt span { font-size: 1.3rem; line-height: 1; }
+.share-opt:hover { border-color: var(--accent); background: var(--accent-softer); }
+@media (max-width: 420px) { .share-opts { grid-template-columns: repeat(2, 1fr); } }

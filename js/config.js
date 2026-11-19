@@ -5,7 +5,7 @@ window.CONFIG = {
   negocio: "3D JCGA",
 
   // Versión de la app (historial en versiones.html)
-  version: "2.0.2",
+  version: "2.1.0",
 
   // 52 = México + número a 10 dígitos (sin espacios ni +)
   whatsapp: "527721509872",

@@ -17,6 +17,7 @@ App.productModal = (() => {
     setHash("#p=" + encodeURIComponent(App.skuOf(p)));
     $("#pmDesc").textContent = p.descripcionDetallada;
     refreshFav();
+    $("#shareMenu").hidden = true;
 
     const many = p.imagenes.length > 1;
     $("#stageTrack").innerHTML = p.imagenes.map((src, k) =>
@@ -134,6 +135,13 @@ App.productModal = (() => {
       App.toast(`✅ ${state.qty} × ${state.p.nombre} agregado`);
     });
 
+    // Compartir (botón sobre la foto y junto a favoritos)
+    modal().addEventListener("click", e => {
+      if (e.target.closest("[data-share]")) { compartir(); return; }
+      if (e.target.closest("[data-share-copy]")) { copiarEnlace(); return; }
+      if (e.target.closest("[data-share-close]") || e.target.closest(".share-opt")) { $("#shareMenu").hidden = true; return; }
+    });
+
     // Favorito: requiere sesión
     $("#pmFav").addEventListener("click", async () => {
       if (!App.auth?.isLoggedIn()) {
@@ -148,6 +156,53 @@ App.productModal = (() => {
       if (!ok) setFav(!add);
       btn.disabled = false;
     });
+  }
+
+  /* ---------- Compartir ---------- */
+  function datosCompartir() {
+    const p = state.p;
+    const url = App.productUrl(p) || location.href;
+    const texto = `¡Mira esto en ${CONFIG.negocio}! ${p.nombre} · ${App.fmt(p.precioBase)} 🖨️✨`;
+    return { p, url, texto };
+  }
+
+  async function compartir() {
+    const { p, url, texto } = datosCompartir();
+    // Celular (y navegadores compatibles): menú nativo para compartir
+    if (navigator.share) {
+      try { await navigator.share({ title: p.nombre, text: texto, url }); return; }
+      catch (e) { if (e.name === "AbortError") return; } // canceló: no hacer nada
+    }
+    abrirMenuCompartir();
+  }
+
+  // Respaldo para computadoras sin menú nativo
+  function abrirMenuCompartir() {
+    const { url, texto } = datosCompartir();
+    const enc = encodeURIComponent;
+    const m = $("#shareMenu");
+    m.innerHTML = `
+      <div class="share-head"><b>Compartir producto</b><button type="button" class="share-close" data-share-close aria-label="Cerrar">×</button></div>
+      <div class="share-opts">
+        <a class="share-opt wa" href="https://wa.me/?text=${enc(texto + "\n" + url)}" target="_blank" rel="noopener"><span>💬</span>WhatsApp</a>
+        <a class="share-opt fb" href="https://www.facebook.com/sharer/sharer.php?u=${enc(url)}" target="_blank" rel="noopener"><span>📘</span>Facebook</a>
+        <a class="share-opt tg" href="https://t.me/share/url?url=${enc(url)}&text=${enc(texto)}" target="_blank" rel="noopener"><span>✈️</span>Telegram</a>
+        <button type="button" class="share-opt cp" data-share-copy><span>🔗</span>Copiar enlace</button>
+      </div>`;
+    m.hidden = false;
+  }
+
+  async function copiarEnlace() {
+    const { url } = datosCompartir();
+    try { await navigator.clipboard.writeText(url); }
+    catch (_) {
+      const ta = Object.assign(document.createElement("textarea"), { value: url });
+      ta.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); } catch (_) {}
+      ta.remove();
+    }
+    App.toast("🔗 Enlace copiado. ¡Pégalo donde quieras!");
+    $("#shareMenu").hidden = true;
   }
 
   function setFav(on) {
