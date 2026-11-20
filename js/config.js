@@ -5,7 +5,7 @@ window.CONFIG = {
   negocio: "3D JCGA",
 
   // Versión de la app (historial en versiones.html)
-  version: "2.2.0",
+  version: "2.3.0",
 
   // 52 = México + número a 10 dígitos (sin espacios ni +)
   whatsapp: "527721509872",
@@ -125,19 +125,20 @@ window.CONFIG = {
     { min: 20, max: null, descuento: 0.15 }
   ],
 
-  // Costos reales (de costos_catalogo_3d.xlsx, 28-oct-2026). tools/extraer-makerworld.js usa la misma fórmula:
-  // costo = g/1000 × $kg × (1+merma) × [1+merma multicolor] + h × (luz + desgaste) + mano de obra + empaque
-  // precio = máx(mínimo, redondear(costo × (1 + margen)))
+  // Fórmula de precios (opción B, 20-nov-2026). Es la misma de tools/precios.js y tools/extraer-makerworld.js:
+  //   impresión = g/1000 × $kg × (1+merma) × [1+merma multicolor] + h × (luz + desgaste)
+  //   extras    = empaque (solo llaveros/clickers) + mano de obra (solo si se arma), a costo
+  //   precio    = redondear hacia arriba a $5 de: impresión + extras + máx(ganancia mínima, impresión × margen)
   costos: {
     kgPLA: 300,            // PLA otros colores; verde 288, negro 259, blanco 266, amarillo 275, rojo 266
     kgPETG: 450,
     merma: 0.05, mermaMulticolor: 0.15,
     luzHora: 0.448,        // 140 W × $3.20/kWh
     desgasteHora: 3.33,    // impresora $11,650 / 5,000 h + $1 mantenimiento
-    manoObra: 8.33,        // $50/h × 10 min
-    empaque: 5,
-    margen: 1.5,           // 150 % sobre el costo
-    precioMinimo: 10,
+    manoObra: 4,           // ~5 min de armado, solo productos que se arman
+    empaque: 5,            // solo llaveros y clickers
+    margen: 2,             // 200 % sobre el costo de impresión
+    gananciaMinima: 10,    // nunca menos de $10 de ganancia por pieza
     redondeo: 5
   },
 

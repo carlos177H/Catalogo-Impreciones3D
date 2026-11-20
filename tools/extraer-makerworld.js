@@ -17,9 +17,12 @@
    Revisa siempre: id, categoria, precioBase y la licencia.
    ========================================================= */
 (() => {
-  // Misma fórmula que costos_catalogo_3d.xlsx y CONFIG.costos en js/config.js
+  // Misma fórmula que tools/precios.js (opción B, 20-nov-2026)
   const COSTOS = { PLA: 300, PETG: 450, merma: 0.05, multicolor: 0.15, luzHora: 0.448, desgasteHora: 3.33,
-                   manoObra: 8.33, empaque: 5, margen: 1.5, minimo: 10, redondeo: 5 };
+                   manoObra: 4, empaque: 5, margen: 2, gananciaMinima: 10, redondeo: 5 };
+  const RE_EMPAQUE = /llavero|clicker|keychain/i;
+  const RE_ARMADO = /armable|para armar|se arma|ensambl|montaje|tornill|pegamento|se pega|\bimanes?\b|varias piezas|\b\d{2,} piezas|assembl|\bscrews?\b|\bglue\b/i;
+  const RE_SIN_ARMADO = /en una sola pieza|en una pieza|sin armar|sin ensambl|print.in.place|no assembly/i;
   const LICENCIAS_VENTA_OK = ["BY", "BY-SA", "BY-ND", "CC0", "CC BY", "CC BY-SA", "CC BY-ND"];
 
   const CATEGORIA = (cats, tags) => {
@@ -64,11 +67,15 @@
     return el.textContent.replace(/¡Dame un impulso!.*?(\n|$)/gi, "").replace(/\s*\n\s*/g, "\n").trim();
   };
 
-  const precio = (g, h, colores, material) => {
+  // Empaque solo llaveros/clickers; mano de obra solo si se arma; ganancia mínima $10 por pieza
+  const precio = (g, h, colores, material, texto) => {
     const kg = /PETG/i.test(material) ? COSTOS.PETG : COSTOS.PLA;
-    const costo = g / 1000 * kg * (1 + COSTOS.merma) * (colores > 1 ? 1 + COSTOS.multicolor : 1)
-      + h * (COSTOS.luzHora + COSTOS.desgasteHora) + COSTOS.manoObra + COSTOS.empaque;
-    return Math.max(COSTOS.minimo, Math.ceil(costo * (1 + COSTOS.margen) / COSTOS.redondeo) * COSTOS.redondeo);
+    const impresion = g / 1000 * kg * (1 + COSTOS.merma) * (colores > 1 ? 1 + COSTOS.multicolor : 1)
+      + h * (COSTOS.luzHora + COSTOS.desgasteHora);
+    const extras = (RE_EMPAQUE.test(texto) ? COSTOS.empaque : 0)
+      + (RE_ARMADO.test(texto) && !RE_SIN_ARMADO.test(texto) ? COSTOS.manoObra : 0);
+    const ganancia = Math.max(COSTOS.gananciaMinima, impresion * COSTOS.margen);
+    return Math.ceil((impresion + extras + ganancia) / COSTOS.redondeo) * COSTOS.redondeo;
   };
 
   function aRegistro(d, profileId) {
@@ -101,7 +108,7 @@
       descripcionCorta: primera,
       descripcionDetallada: desc.slice(0, 700),
       imagenes: fotos.slice(0, 5),
-      precioBase: precio(gramos, horas, colores, material),
+      precioBase: precio(gramos, horas, colores, material, [d.titleTranslated, d.title, desc, ...cats, ...tags].join(" ")),
       escalaDescuento: null,
       tamano: dims,
       impresion: { material, gramos, horas, colores, multicolor: !!inst.needAms },
