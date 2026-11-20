@@ -540,3 +540,81 @@ button.ci-name:hover { color: var(--accent-ink); text-decoration: underline; }
 .share-opt span { font-size: 1.3rem; line-height: 1; }
 .share-opt:hover { border-color: var(--accent); background: var(--accent-softer); }
 @media (max-width: 420px) { .share-opts { grid-template-columns: repeat(2, 1fr); } }
+
+/* =========================================================
+   v2.2 · Opciones guiadas (colores, zonas, cotización)
+   ========================================================= */
+.cpick [hidden], .zpick [hidden], #quoteForm [hidden], .q-sub[hidden] { display: none !important; }
+
+/* Marca: logo + "Impresiones 3D" con JCGA abajo */
+.brand-txt { display: flex; flex-direction: column; line-height: 1.05; }
+.brand-txt b { font-size: 1.08rem; font-weight: 800; letter-spacing: -.02em; }
+.brand-txt small { font-size: .7rem; font-weight: 700; letter-spacing: .22em; color: var(--accent-ink); margin-top: 2px; }
+
+/* Selector de color */
+.cpick { display: flex; flex-direction: column; gap: 8px; }
+.cpick-rows { display: flex; flex-direction: column; gap: 8px; }
+.cpick-row { display: grid; grid-template-columns: 30px 1fr auto; gap: 8px; align-items: center; }
+.cpick-row .cpick-otro { grid-column: 2 / -1; }
+.cpick-row select { width: 100%; }
+.cdot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); background: repeating-linear-gradient(45deg, #eef4f2 0 4px, #fff 4px 8px); }
+.cdot.foto { background: conic-gradient(#d62828, #f9d71c, #2a9d4b, #1e4fd8, #7b3fa0, #d62828); }
+.cdot.otro { background: conic-gradient(from 90deg, #f48fb1, #98e0c4, #5bc0eb, #f48fb1); }
+.cpick-del { width: 34px; height: 34px; border-radius: 50%; background: var(--surface-2); font-size: 1.1rem; font-weight: 700; color: var(--ink-2); }
+.cpick-del:hover { background: #fde2e2; color: var(--danger); }
+.cpick-add { align-self: flex-start; font-size: .84rem; font-weight: 700; color: var(--accent-ink); padding: 4px 2px; }
+.cpick-add:hover { text-decoration: underline; }
+.field.err .cpick select:invalid, .cpick.err select { border-color: var(--danger); }
+.pm-color { margin: 0; }
+.pm-color.err { background: #fff5f5; border-radius: 14px; padding: 10px; margin: -10px; }
+.pm-color.err .hint { display: block; }
+
+/* Color dentro del carrito / resúmenes */
+.ci-color { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: .78rem; margin: 3px 0 2px; }
+.ci-color .link-btn { font-size: .76rem; }
+.ci-color.falta { background: #fff4e0; color: #8a5300; border-radius: 8px; padding: 4px 8px; cursor: pointer; }
+.ci-color.falta span { opacity: .75; }
+.cchip { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--ink-2); }
+.cchip i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,.18); display: inline-block; }
+.cchip i.foto { background: conic-gradient(#d62828, #f9d71c, #2a9d4b, #1e4fd8, #d62828); }
+.cchip i.otro { background: conic-gradient(#f48fb1, #98e0c4, #5bc0eb, #f48fb1); }
+.cplus { color: var(--ink-3); font-weight: 700; }
+.row-color, .ped-color, .adm-color { display: block; font-size: .76rem; color: var(--ink-3); font-weight: 600; }
+
+/* Zona de entrega */
+.zpick { display: flex; flex-direction: column; gap: 10px; }
+.zpick-step { display: flex; flex-direction: column; gap: 6px; animation: zp-in .25s var(--ease); }
+.zpick-step label { font-size: .8rem; font-weight: 700; color: var(--ink-2); }
+.zpick select { width: 100%; }
+.field.err .zpick select:not(:valid), .field.err .zpick select { border-color: var(--danger); }
+@keyframes zp-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+/* Cotización: fotos y medidas */
+.q-sub { margin-top: -4px; padding-left: 12px; border-left: 3px solid var(--accent-soft); }
+.q-upload { display: flex; align-items: center; gap: 10px; border: 2px dashed #b9d8d2; border-radius: 14px; padding: 14px; font-weight: 700; color: var(--accent-ink); cursor: pointer; background: var(--accent-softer); }
+.q-upload small { font-weight: 500; color: var(--ink-3); }
+.field.err .q-upload { border-color: var(--danger); }
+.q-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.q-thumbs:empty { display: none; }
+.q-thumb { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--surface-2); }
+.q-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.q-thumb button { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; background: rgba(16,32,29,.7); color: #fff; font-weight: 700; line-height: 1; }
+.q-medidas { margin-top: 10px; }
+.q-medidas .field { margin-bottom: 0; }
+#qfSize > .hint { margin-top: 6px; }
+
+/* Ficha: nota de tamaño estimado */
+.spec .n { font-size: .7rem; color: var(--ink-3); margin-top: 2px; }
+
+/* Galería más compacta para no chocar con el encabezado */
+.stage { max-height: min(62vh, 520px); width: 100%; margin: 0 auto; }
+.stage-track img { object-fit: contain; }
+@media (max-width: 860px) {
+  .stage { aspect-ratio: 4 / 3; max-height: 46vh; }
+  .thumbs { grid-template-columns: repeat(5, minmax(0, 56px)); justify-content: center; }
+}
+@media (max-width: 640px) {
+  #productModal .modal-box { max-height: calc(100dvh - 64px); }
+  #productModal .gallery { padding-top: 54px; }
+  .brand-txt b { font-size: .98rem; }
+}

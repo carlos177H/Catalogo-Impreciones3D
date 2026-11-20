@@ -339,6 +339,7 @@
             <div class="adm-items">
               ${(p.items || []).map(i => `<div><span>${i.cantidad} × ${esc(i.nombre || "Producto")}
                   <small class="adm-sku">ID ${esc(i.sku || "—")}</small>
+                  ${i.color ? `<small class="adm-color">🎨 ${esc(i.color)}</small>` : ""}
                   ${i.sku ? `<a class="adm-link" href="${urlProducto(i.sku)}" target="_blank" rel="noopener">Ver producto ↗</a>` : ""}</span>
                 <b>${fmt(+i.subtotal)}</b></div>`).join("")}
             </div>

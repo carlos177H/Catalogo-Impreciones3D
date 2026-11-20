@@ -9,11 +9,13 @@
 <link rel="apple-touch-icon" href="img/logo-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#14b8a6">
+<link rel="preconnect" href="https://makerworld.bblmw.com">
+<link rel="dns-prefetch" href="https://makerworld.bblmw.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=20261118p">
-<link rel="stylesheet" href="css/auth.css?v=20261118p">
+<link rel="stylesheet" href="css/styles.css?v=20261120a">
+<link rel="stylesheet" href="css/auth.css?v=20261120a">
 <style>
 /* ── Logo y árbol junto al nombre ── */
 .brand-logo { width: 40px; height: 40px; border-radius: 10px; object-fit: contain; background: #fff; box-shadow: 0 1px 3px rgba(16,32,29,.12); }
@@ -83,7 +85,7 @@
   <div class="wrap top-row">
     <a class="brand" href="#" aria-label="3D JCGA, inicio">
       <img class="brand-logo" src="img/logo-icon.png" alt="" width="40" height="40">
-      <span id="brandName">3D JCGA</span>
+      <span class="brand-txt"><b>Impresiones 3D</b><small>JCGA</small></span>
       <span class="brand-tree" aria-hidden="true">🎄</span>
     </a>
     <div class="search" id="searchBox">
@@ -179,6 +181,11 @@
           <div class="section-t" style="margin-top:0">Precio por mayoreo</div>
           <div class="tiers" id="pmTiers"></div>
         </div>
+        <div class="field pm-color" id="pmColorField">
+          <label>Color <span class="req">*</span></label>
+          <div id="pmColor"></div>
+          <span class="hint">Elige el color para agregarlo al carrito.</span>
+        </div>
         <div class="calc">
           <div class="qty-row">
             <span class="qty-label">Cantidad</span>
@@ -231,14 +238,14 @@
         <span class="hint">Escribe tu nombre para el pedido.</span>
       </div>
       <div class="field" id="fLoc">
-        <label for="cLoc">¿Dónde te gustaría recibirlo? <span class="req">*</span></label>
-        <input id="cLoc" type="text" placeholder="Ej. Campus ITP, Centro de Pachuca, Actopan…" autocomplete="address-level2">
-        <span class="hint">Escribe la zona o lugar de entrega.</span>
+        <label for="czZona">¿Dónde te gustaría recibirlo? <span class="req">*</span></label>
+        <div id="cZona"></div>
+        <span class="hint">Elige tu zona y punto de entrega.</span>
         <span class="field-note">📍 El punto exacto, el día y la hora los acuerdas con el vendedor por WhatsApp.</span>
       </div>
       <div class="field">
         <label for="cNotes">Notas o especificaciones</label>
-        <textarea id="cNotes" placeholder="Colores, nombre a grabar, fecha que lo necesitas…"></textarea>
+        <textarea id="cNotes" placeholder="Nombre a grabar, fecha que lo necesitas, detalles…"></textarea>
       </div>
     </div>
   </div>
@@ -298,23 +305,24 @@
 <script src="js/supabase.min.js"></script>
 
 <!-- Datos y configuración -->
-<script src="js/config.js?v=20261118p" defer></script>
-<script src="js/data/productos.js?v=20261118p" defer></script>
-<script src="js/supabase.js?v=20261118p" defer></script>
+<script src="js/config.js?v=20261120a" defer></script>
+<script src="js/data/productos.js?v=20261120a" defer></script>
+<script src="js/supabase.js?v=20261120a" defer></script>
 <!-- Lógica de la app (el orden importa) -->
-<script src="js/utils.js?v=20261118p" defer></script>
-<script src="js/auth.js?v=20261118p" defer></script>
-<script src="js/user-panel.js?v=20261118p" defer></script>
-<script src="js/notificaciones.js?v=20261118p" defer></script>
-<script src="js/mantenimiento.js?v=20261118p" defer></script>
-<script src="js/invitacion.js?v=20261118p" defer></script>
-<script src="js/cart.js?v=20261118p" defer></script>
-<script src="js/catalog.js?v=20261118p" defer></script>
-<script src="js/product-modal.js?v=20261118p" defer></script>
-<script src="js/cart-drawer.js?v=20261118p" defer></script>
-<script src="js/pedidos.js?v=20261118p" defer></script>
-<script src="js/checkout.js?v=20261118p" defer></script>
-<script src="js/quote.js?v=20261118p" defer></script>
-<script src="js/main.js?v=20261118p" defer></script>
+<script src="js/utils.js?v=20261120a" defer></script>
+<script src="js/auth.js?v=20261120a" defer></script>
+<script src="js/user-panel.js?v=20261120a" defer></script>
+<script src="js/notificaciones.js?v=20261120a" defer></script>
+<script src="js/mantenimiento.js?v=20261120a" defer></script>
+<script src="js/invitacion.js?v=20261120a" defer></script>
+<script src="js/opciones.js?v=20261120a" defer></script>
+<script src="js/cart.js?v=20261120a" defer></script>
+<script src="js/catalog.js?v=20261120a" defer></script>
+<script src="js/product-modal.js?v=20261120a" defer></script>
+<script src="js/cart-drawer.js?v=20261120a" defer></script>
+<script src="js/pedidos.js?v=20261120a" defer></script>
+<script src="js/checkout.js?v=20261120a" defer></script>
+<script src="js/quote.js?v=20261120a" defer></script>
+<script src="js/main.js?v=20261120a" defer></script>
 </body>
 </html>

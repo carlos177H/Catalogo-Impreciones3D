@@ -10,7 +10,6 @@
   $$("[data-close]").forEach(b => b.addEventListener("click", e => App.closeLayer(e.target.closest(".modal, .drawer"))));
   document.addEventListener("keydown", e => { if (e.key === "Escape" && App.topLayer()) App.closeLayer(); });
 
-  $("#brandName").textContent = CONFIG.negocio;
   $("#year").textContent = new Date().getFullYear();
   if ($("#appVersion")) $("#appVersion").textContent = CONFIG.version || "";
 

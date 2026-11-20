@@ -3,7 +3,8 @@
    ========================================================= */
 App.productModal = (() => {
   const { $, $$, esc, fmt, round2, pct } = App;
-  const state = { p: null, i: 0, qty: 1 };
+  const state = { p: null, i: 0, qty: 1, imgs: [] };
+  let color = null; // selector de color
   const modal = () => $("#productModal");
 
   function open(id) {
@@ -19,22 +20,49 @@ App.productModal = (() => {
     refreshFav();
     $("#shareMenu").hidden = true;
 
-    const many = p.imagenes.length > 1;
-    $("#stageTrack").innerHTML = p.imagenes.map((src, k) =>
-      `<img src="${App.img(src, 900)}" alt="${esc(p.nombre)} – imagen ${k + 1}" ${App.IMG_ATTR}>`).join("");
-    $("#thumbs").innerHTML = many ? p.imagenes.map((src, k) =>
-      `<button class="thumb ${k ? "" : "on"}" data-i="${k}" aria-label="Ver imagen ${k + 1}"><img src="${App.img(src, 200)}" alt="" ${App.IMG_ATTR}></button>`).join("") : "";
-    $("#dots").innerHTML = many ? p.imagenes.map((_, k) => `<span class="${k ? "" : "on"}"></span>`).join("") : "";
-    $("#dots").style.display = many ? "" : "none";
-    $("#prevImg").style.display = $("#nextImg").style.display = many ? "" : "none";
-    $("#stageTrack").style.transform = "translateX(0)";
+    state.imgs = p.imagenes.filter(u => !rotas.has(u));
+    if (!state.imgs.length) state.imgs = p.imagenes.slice(0, 1);
+    renderGaleria();
+    revisarFotos(p);
 
     renderSpecs(p);
+    color.reset();
+    $("#pmColorField").classList.remove("err");
     const inCart = App.cart.items.some(i => i.id === id);
     $("#addLabel").textContent = inCart ? "Agregar más al carrito" : "Agregar al carrito";
     updateCalc();
     App.openLayer(modal());
     $("#productModal .modal-box").scrollTop = 0;
+  }
+
+  /* ---------- Galería ---------- */
+  const rotas = new Set(); // fotos que ya no existen en la fuente
+  function renderGaleria() {
+    const p = state.p, imgs = state.imgs, many = imgs.length > 1;
+    state.i = 0;
+    $("#stageTrack").innerHTML = imgs.map((src, k) =>
+      `<img src="${App.img(src, 800)}" srcset="${App.srcset(src, [500, 800, 1000])}" sizes="(max-width:860px) 92vw, 500px" alt="${esc(p.nombre)} – imagen ${k + 1}" ${k ? App.IMG_ATTR : App.IMG_ATTR_YA}>`).join("");
+    $("#thumbs").innerHTML = many ? imgs.map((src, k) =>
+      `<button class="thumb ${k ? "" : "on"}" data-i="${k}" aria-label="Ver imagen ${k + 1}"><img src="${App.img(src, 160)}" alt="" ${App.IMG_ATTR}></button>`).join("") : "";
+    $("#dots").innerHTML = many ? imgs.map((_, k) => `<span class="${k ? "" : "on"}"></span>`).join("") : "";
+    $("#dots").style.display = many ? "" : "none";
+    $("#prevImg").style.display = $("#nextImg").style.display = many ? "" : "none";
+    $("#stageTrack").style.transform = "translateX(0)";
+  }
+  // Comprueba cada foto con una miniatura; si alguna no existe, se quita de la galería
+  function revisarFotos(p) {
+    p.imagenes.forEach(src => {
+      if (rotas.has(src)) return;
+      const im = new Image();
+      im.referrerPolicy = "no-referrer";
+      im.onerror = () => {
+        rotas.add(src);
+        if (state.p !== p) return;
+        const quedan = p.imagenes.filter(u => !rotas.has(u));
+        if (quedan.length && quedan.length !== state.imgs.length) { state.imgs = quedan; renderGaleria(); }
+      };
+      im.src = App.img(src, 160);
+    });
   }
 
   // Mantiene en la URL el producto abierto para poder compartir el enlace
@@ -44,13 +72,13 @@ App.productModal = (() => {
 
   function renderSpecs(p) {
     const imp = p.impresion || {};
+    const tam = App.opciones.tamanoDe(p);
     const specs = [
-      ["Tamaño", p.tamano || "Consultar"],
-      imp.material && ["Material", imp.material],
-      imp.colores && ["Colores", imp.colores === 1 ? "1 color (a elegir)" : `${imp.colores} colores`],
+      ["Tamaño aproximado", tam ? tam.texto : "Consultar", tam && !tam.exacto ? "Estimado; confírmalo con el vendedor" : ""],
+      imp.colores > 1 && ["Diseño", `${imp.colores} colores`],
       imp.horas && ["Producción", imp.horas < 1 ? "Menos de 1 h por pieza" : `~${Math.ceil(imp.horas)} h por pieza`]
     ].filter(Boolean);
-    $("#pmSpecs").innerHTML = specs.map(([k, v]) => `<div class="spec"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("");
+    $("#pmSpecs").innerHTML = specs.map(([k, v, n]) => `<div class="spec"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div>${n ? `<div class="n">${esc(n)}</div>` : ""}</div>`).join("");
 
     const f = p.fuente;
     $("#pmCredit").innerHTML = f?.autor
@@ -59,7 +87,7 @@ App.productModal = (() => {
   }
 
   function go(i) {
-    const n = state.p.imagenes.length;
+    const n = state.imgs.length;
     state.i = (i + n) % n;
     $("#stageTrack").style.transform = `translateX(-${state.i * 100}%)`;
     $$("#thumbs .thumb").forEach((t, k) => t.classList.toggle("on", k === state.i));
@@ -111,13 +139,13 @@ App.productModal = (() => {
     $("#stage").addEventListener("touchend", e => {
       if (x0 === null) return;
       const dx = e.changedTouches[0].clientX - x0;
-      if (Math.abs(dx) > 40 && state.p.imagenes.length > 1) go(state.i + (dx < 0 ? 1 : -1));
+      if (Math.abs(dx) > 40 && state.imgs.length > 1) go(state.i + (dx < 0 ? 1 : -1));
       x0 = null;
     });
 
     // Flechas del teclado
     document.addEventListener("keydown", e => {
-      if (App.topLayer() !== modal() || e.target.tagName === "INPUT" || state.p.imagenes.length < 2) return;
+      if (App.topLayer() !== modal() || e.target.tagName === "INPUT" || state.imgs.length < 2) return;
       if (e.key === "ArrowRight") go(state.i + 1);
       if (e.key === "ArrowLeft") go(state.i - 1);
     });
@@ -127,12 +155,20 @@ App.productModal = (() => {
     $("#qtyInput").addEventListener("input", e => { if (e.target.value !== "") { state.qty = App.clampQty(e.target.value); updateCalc(); } });
     $("#qtyInput").addEventListener("blur", e => { state.qty = App.clampQty(e.target.value); updateCalc(); });
 
+    color = App.opciones.colorPicker($("#pmColor"), { foto: true, onChange: () => $("#pmColorField").classList.remove("err") });
+
     $("#addToCart").addEventListener("click", () => {
-      App.cart.add(state.p.id, state.qty);
+      if (!color.valid()) {
+        $("#pmColorField").classList.add("err");
+        $("#pmColorField").scrollIntoView({ behavior: "smooth", block: "center" });
+        color.marcarError();
+        return App.toast("🎨 Elige el color de tu pieza");
+      }
+      App.cart.add(state.p.id, state.qty, color.value());
       App.drawer.render();
       App.drawer.bump();
       App.closeLayer(modal());
-      App.toast(`✅ ${state.qty} × ${state.p.nombre} agregado`);
+      App.toast(`✅ ${state.qty} × ${state.p.nombre} (${color.value()}) agregado`);
     });
 
     // Compartir (botón sobre la foto y junto a favoritos)

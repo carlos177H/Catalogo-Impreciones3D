@@ -85,7 +85,7 @@ App.pedidos = (() => {
   }
 
   async function crear({ lugar, notas, metodo }) {
-    const items = App.cart.items.map(i => ({ id: i.id, qty: i.qty }));
+    const items = App.cart.items.map(i => ({ id: i.id, qty: i.qty, color: i.color || null }));
     const { data, error } = await sb().rpc("crear_pedido", {
       p_items: items, p_lugar: lugar, p_notas: notas || null, p_metodo: metodo
     });
@@ -101,7 +101,7 @@ App.pedidos = (() => {
       .select(`id_pedido, fecha_pedido, id_estatus, total, anticipo, metodo_pago, notas, lugar_entrega,
                estatus_pedido ( nombre, descripcion ),
                pagos ( id_pago, monto, comprobante_url, confirmado, fecha_pago ),
-               detalle_pedido ( id_producto, cantidad, precio_unitario, subtotal ),
+               detalle_pedido ( id_producto, cantidad, precio_unitario, subtotal, color ),
                historial_pedido ( id_historial, id_estatus, fecha, comentario )`)
       .eq("id_usuario", perfil.id_usuario)
       .order("fecha_pedido", { ascending: false });
@@ -217,7 +217,7 @@ App.pedidos = (() => {
               const p = App.byId(d.id_producto);
               return `<div class="up-detail-item"><span>${d.cantidad} × ${p
                   ? `<button type="button" class="ped-prod" data-ver-prod="${p.id}">${esc(p.nombre)}</button> <small class="ped-sku">${esc(App.skuOf(p))}</small>`
-                  : "Producto #" + d.id_producto}</span><span>${fmt(parseFloat(d.subtotal))}</span></div>`;
+                  : "Producto #" + d.id_producto}${d.color ? `<small class="ped-color">🎨 ${esc(d.color)}</small>` : ""}</span><span>${fmt(parseFloat(d.subtotal))}</span></div>`;
             }).join("")}
           </div>
           ${ped.lugar_entrega ? `<p class="ped-note">📍 ${esc(ped.lugar_entrega)}</p>` : ""}
@@ -284,5 +284,5 @@ App.pedidos = (() => {
     if (App.topLayer() !== m) App.openLayer(m);
   }
 
-  return { waInfo, config, anticipoEstimado, tipoPago, crear, listar, subirComprobante, urlComprobante, abrirSubida, tarjeta, etiqueta, PASOS, ICO };
+  return { comprimir, waInfo, config, anticipoEstimado, tipoPago, crear, listar, subirComprobante, urlComprobante, abrirSubida, tarjeta, etiqueta, PASOS, ICO };
 })();

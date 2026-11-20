@@ -5,7 +5,7 @@ window.CONFIG = {
   negocio: "3D JCGA",
 
   // Versión de la app (historial en versiones.html)
-  version: "2.1.0",
+  version: "2.2.0",
 
   // 52 = México + número a 10 dígitos (sin espacios ni +)
   whatsapp: "527721509872",
@@ -20,6 +20,7 @@ window.CONFIG = {
   // Pestañas del catálogo (el orden importa). "Todos" siempre va primero.
   categorias: [
     "Todos",
+    "Antiestrés y Fidgets",
     "Oficina y Escritorio",
     "Decoración Elegante",
     "Decoración y Hogar",
@@ -37,7 +38,6 @@ window.CONFIG = {
     "Juguetes para Niños",
     "Juguetes para Adolescentes",
     "Para Jóvenes",
-    "Antiestrés y Fidgets",
     "Deportes y Fitness",
     "Autos",
     "Fans: Música y Figuras",
@@ -143,6 +143,10 @@ window.CONFIG = {
 
   // true = oculta del catálogo los productos cuya licencia no permite venderlos
   ocultarSinLicenciaComercial: false,
+
+  // true = oculta los productos que no tienen ninguna foto (sus imágenes se
+  // borraron de MakerWorld). Cuando les pongas fotos nuevas vuelven a aparecer.
+  ocultarSinFoto: true,
 
   // Dirección pública del catálogo (por ejemplo https://usuario.github.io/catalogo/).
   // Se usa para el enlace de cada producto en el mensaje de WhatsApp.

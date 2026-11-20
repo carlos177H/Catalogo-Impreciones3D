@@ -20,7 +20,7 @@ App.checkout = (() => {
       <h2 id="coTitle">Confirmar pedido</h2>
       <p class="co-sub">Para <b>${esc(c.name)}</b> · ${esc(c.loc)}</p>
       <div class="summary">
-        ${App.cart.lines().map(l => `<div class="row"><span>${l.qty} × ${esc(l.p.nombre)}</span><span>${fmt(l.subtotal)}</span></div>`).join("")}
+        ${App.cart.lines().map(l => `<div class="row"><span>${l.qty} × ${esc(l.p.nombre)}${l.color ? `<small class="row-color">🎨 ${esc(l.color)}</small>` : ""}</span><span>${fmt(l.subtotal)}</span></div>`).join("")}
         ${t.ahorro > 0 ? `<div class="row" style="color:var(--accent-ink);font-weight:700"><span>Descuento por mayoreo</span><span>−${fmt(t.ahorro)}</span></div>` : ""}
         <div class="row total"><span>Total estimado</span><span>${fmt(t.total)}</span></div>
       </div>
@@ -91,6 +91,7 @@ App.checkout = (() => {
     App.cart.lines().forEach((l, k) => {
       L.push(`${k + 1}. ${l.p.nombre}`);
       L.push(`    🆔 ${App.skuOf(l.p)}`);
+      if (l.color) L.push(`    🎨 Color: ${l.color}`);
       L.push(`    ${l.qty} pz × ${fmt(l.unit)}${l.tier.descuento ? ` (−${pct(l.tier.descuento)}%)` : ""} = *${fmt(l.subtotal)}*`);
       const link = App.productUrl(l.p);
       if (link) L.push(`    🔗 ${link}`);
@@ -153,7 +154,7 @@ App.checkout = (() => {
       <h2 id="coTitle">Confirmar pedido</h2>
       <p class="co-sub">Para <b>${esc(perfil.nombre_completo)}</b> · ${esc(c.loc)}</p>
       <div class="summary">
-        ${App.cart.lines().map(l => `<div class="row"><span>${l.qty} × ${esc(l.p.nombre)}</span><span>${fmt(l.subtotal)}</span></div>`).join("")}
+        ${App.cart.lines().map(l => `<div class="row"><span>${l.qty} × ${esc(l.p.nombre)}${l.color ? `<small class="row-color">🎨 ${esc(l.color)}</small>` : ""}</span><span>${fmt(l.subtotal)}</span></div>`).join("")}
         <div class="row total"><span>Total estimado</span><span>${fmt(t.total)}</span></div>
       </div>
       <p class="ref-note" style="margin:-8px 0 16px">Precios de referencia. Si algo cambia (tamaño, colores o personalización) te avisamos antes de imprimir.</p>

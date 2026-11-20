@@ -17,8 +17,20 @@ App.norm = s => String(s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/
 App.clampQty = q => Math.max(1, Math.min(999, parseInt(q, 10) || 1));
 
 /* ---------- Productos ---------- */
-App.productos = () => PRODUCTOS.filter(p =>
-  p.activo !== false && (!CONFIG.ocultarSinLicenciaComercial || p.fuente?.permiteVenta));
+// Cada visita muestra los productos en un orden distinto (se mantiene igual mientras navega)
+const _orden = new Map();
+const _rango = id => { if (!_orden.has(id)) _orden.set(id, Math.random()); return _orden.get(id); };
+let _cache = { src: null, n: -1, list: [] };
+App.productos = () => {
+  if (_cache.src !== PRODUCTOS || _cache.n !== PRODUCTOS.length) {
+    const list = PRODUCTOS.filter(p =>
+      p.activo !== false && (!CONFIG.ocultarSinLicenciaComercial || p.fuente?.permiteVenta)
+      && (!CONFIG.ocultarSinFoto || (p.imagenes || []).some(Boolean)));
+    list.sort((a, b) => _rango(a.id) - _rango(b.id));
+    _cache = { src: PRODUCTOS, n: PRODUCTOS.length, list };
+  }
+  return _cache.list;
+};
 App.byId = id => App.productos().find(p => p.id === id);
 App.bySku = sku => App.productos().find(p => (p.sku || "").toLowerCase() === String(sku).toLowerCase());
 App.skuOf = p => p.sku || ("3DC-" + String(p.id).padStart(4, "0"));
@@ -52,13 +64,24 @@ App.coincide = (p, q) => {
 /* ---------- Imágenes ---------- */
 // Pide a la CDN de MakerWorld una versión redimensionada (más ligera)
 App.img = (url, w = 800) => {
-  if (/bblmw\.com/.test(url)) return `${url.split("?")[0]}?x-oss-process=image/resize,w_${w}/format,webp`;
+  if (/bblmw\.com/.test(url)) return `${url.split("?")[0]}?x-oss-process=image/resize,w_${w}/quality,q_72/format,webp`;
   if (/unsplash\.com/.test(url)) return url.replace(/([?&])w=\d+/, `$1w=${w}`);
   return url;
 };
 
+// Varias medidas para que el celular descargue solo la que necesita
+App.srcset = (url, ws) => /bblmw\.com|unsplash\.com/.test(url) ? ws.map(w => `${App.img(url, w)} ${w}w`).join(", ") : "";
+
 // Si una imagen no carga, muestra un placeholder en lugar del ícono roto
 window.imgFallback = function (el) {
+  // Primero intenta con las otras fotos del producto (algunas ya no existen en la fuente)
+  const alt = (el.dataset.alt || "").split("|").filter(Boolean);
+  if (alt.length) {
+    el.dataset.alt = alt.slice(1).join("|");
+    el.removeAttribute("srcset");
+    el.src = alt[0];
+    return;
+  }
   if (el.dataset.fb) return;
   el.dataset.fb = 1;
   const t = (el.alt || "3D").trim().charAt(0).toUpperCase();
@@ -66,6 +89,8 @@ window.imgFallback = function (el) {
   el.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 };
 App.IMG_ATTR = `onerror="imgFallback(this)" loading="lazy" decoding="async" referrerpolicy="no-referrer"`;
+// Para las primeras imágenes visibles: se piden de inmediato y con prioridad
+App.IMG_ATTR_YA = `onerror="imgFallback(this)" loading="eager" fetchpriority="high" decoding="async" referrerpolicy="no-referrer"`;
 
 /* ---------- Toast ---------- */
 let toastT;
@@ -91,6 +116,8 @@ App.store = {
   App.openLayer = el => {
     if (!layers.length) lastFocus = document.activeElement;
     layers.push(el);
+    // La capa más reciente siempre queda encima (p. ej. un modal abierto desde Mi cuenta)
+    el.style.zIndex = 70 + layers.length * 2;
     el.classList.add("open");
     App.$("#overlay").classList.add("open");
     document.body.classList.add("locked");
@@ -103,6 +130,7 @@ App.store = {
     el.classList.remove("open");
     const i = layers.indexOf(el);
     if (i > -1) layers.splice(i, 1);
+    setTimeout(() => { if (!layers.includes(el)) el.style.zIndex = ""; }, 450);
     if (!layers.length) {
       App.$("#overlay").classList.remove("open");
       document.body.classList.remove("locked");

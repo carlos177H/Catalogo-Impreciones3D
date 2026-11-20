@@ -69,7 +69,7 @@ App.catalog = (() => {
           ${opts.cat ? `<button class="see-all" data-goto="${esc(opts.cat)}">Ver todo <span>(${opts.total})</span>${ARROW}</button>` : ""}
         </div>
         ${opts.sub ? `<p class="home-sub">${opts.sub}</p>` : ""}
-        <div class="row-scroll">${list.map((p, i) => cardHTML(p, i, opts.badge)).join("")}</div>
+        <div class="row-scroll">${list.map((p, i) => cardHTML(p, i, opts.badge, { prioridad: opts.prioridad && i < 4 })).join("")}</div>
       </section>`;
   }
 
@@ -78,8 +78,8 @@ App.catalog = (() => {
     const all = App.productos();
     const cfgT = CONFIG.tendencias || {};
     let html = tendenciasDeTemporada()
-      ? rowHTML(esc(cfgT.titulo || "🔥 Lo que está de moda"), tendencias(), { sub: esc(cfgT.subtitulo || ""), badge: "Temporada" })
-      : rowHTML("🔥 Lo que está de moda", tendencias(), { sub: "Lo más pedido y lo de temporada.", badge: "Tendencia" });
+      ? rowHTML(esc(cfgT.titulo || "🔥 Lo que está de moda"), tendencias(), { sub: esc(cfgT.subtitulo || ""), badge: "Temporada", prioridad: true })
+      : rowHTML("🔥 Lo que está de moda", tendencias(), { sub: "Lo más pedido y lo de temporada.", badge: "Tendencia", prioridad: true });
     html += quoteHTML(false);
     categorias().forEach(c => {
       const list = all.filter(p => p.categoria === c);
@@ -122,7 +122,7 @@ App.catalog = (() => {
     $("#gridSentinel")?.remove();
     let html = "";
     next.forEach((p, k) => {
-      html += cardHTML(p, k);
+      html += cardHTML(p, k, null, { prioridad: from === 0 && k < 6 });
       if (from + k + 1 === QUOTE_AT && state.list.length > QUOTE_AT + 4) html += quoteHTML(true);
     });
     $("#grid").insertAdjacentHTML("beforeend", html);
@@ -142,11 +142,11 @@ App.catalog = (() => {
     }
   }
 
-  function cardHTML(p, i, badge) {
+  function cardHTML(p, i, badge, opts = {}) {
     return `
       <article class="card" data-open="${p.id}" style="animation-delay:${Math.min(i, 10) * 40}ms">
         <div class="card-media">
-          <img src="${App.img(p.imagenes[0], 600)}" alt="${esc(p.nombre)}" ${App.IMG_ATTR}>
+          <img src="${App.img(p.imagenes[0], 400)}" srcset="${App.srcset(p.imagenes[0], [300, 400, 600])}" sizes="(max-width:640px) 48vw, (max-width:1000px) 32vw, 290px" data-alt="${esc(p.imagenes.slice(1, 5).map(u => App.img(u, 400)).join("|"))}" alt="${esc(p.nombre)}" ${opts.prioridad ? App.IMG_ATTR_YA : App.IMG_ATTR}>
           ${badge ? `<span class="badge-trend">${badge === "Temporada" ? "🎄" : "🔥"} ${esc(badge)}</span>` : ""}
           ${App.maxDiscount(p) > 0 ? `<span class="badge-disc"><span class="long">Hasta </span>−${App.pct(App.maxDiscount(p))}%<span class="long"> mayoreo</span></span>` : ""}
         </div>
